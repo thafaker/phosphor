@@ -62,7 +62,7 @@ nach der Autorisierung zu dieser Origin zurückfinden.
 ## GoToSocial-Besonderheiten
 
 - GoToSocial spricht **nur WebSocket-Streaming**, kein SSE.
-- Die Standard-Sichtbarkeit neuer Beiträge ist häufig *nicht gelistet*.
+- Die Standard-Sichtbarkeit neuer Beiträge ist häufig _nicht gelistet_.
 - GoToSocial backfillt keine alten Beiträge — Timelines wirken anfangs leer.
 - Rate-Limits (HTTP 429) und Throttling (503) kommen regelmäßig vor; der Client wiederholt
   idempotente Requests mit Backoff.

@@ -6,6 +6,7 @@ import type { Account } from '#lib/api/types.ts';
 import { DEFAULT_MAX_CHARS } from '#lib/config.ts';
 
 const STORAGE_KEY = 'phosphor:session:v1';
+const APP_KEY = 'phosphor:oauth-app:v1';
 const STATE_KEY = 'phosphor:oauth-state';
 
 interface PersistedSession {
@@ -23,6 +24,30 @@ function loadPersisted(): PersistedSession | null {
 		// ignore corrupt storage
 	}
 	return null;
+}
+
+/**
+ * The OAuth app registration is persisted separately from the session: it must
+ * survive the redirect to the instance (and back) *before* we have a token.
+ */
+function loadApp(): RegisteredApp | null {
+	try {
+		const raw = localStorage.getItem(APP_KEY);
+		if (!raw) return null;
+		const app = JSON.parse(raw) as RegisteredApp;
+		if (app?.client_id && app?.client_secret) return app;
+	} catch {
+		// ignore corrupt storage
+	}
+	return null;
+}
+
+function saveApp(app: RegisteredApp): void {
+	try {
+		localStorage.setItem(APP_KEY, JSON.stringify(app));
+	} catch {
+		// ignore (e.g. storage disabled)
+	}
 }
 
 class Session {
@@ -46,7 +71,7 @@ class Session {
 			return;
 		}
 
-		this.app = persisted.app;
+		this.app = persisted.app ?? loadApp();
 		this.token = persisted.token;
 		setTokenGetter(() => this.token);
 
@@ -64,8 +89,9 @@ class Session {
 	async beginLogin(): Promise<void> {
 		this.error = null;
 		try {
-			const app = this.app ?? (await registerApp());
+			const app = this.app ?? loadApp() ?? (await registerApp());
 			this.app = app;
+			saveApp(app);
 			const state = crypto.randomUUID();
 			sessionStorage.setItem(STATE_KEY, state);
 			window.location.href = authorizeUrl(app, state);
@@ -84,12 +110,13 @@ class Session {
 			throw new Error('Ungültiger OAuth-State — bitte erneut versuchen.');
 		}
 
-		const app = this.app ?? loadPersisted()?.app ?? null;
+		const app = this.app ?? loadApp() ?? loadPersisted()?.app ?? null;
 		if (!app) throw new Error('App-Registrierung fehlt — bitte erneut einloggen.');
 
 		const tokenResponse = await exchangeCode(code, app);
 		const token = tokenResponse.access_token;
 		this.app = app;
+		saveApp(app);
 		this.token = token;
 		setTokenGetter(() => this.token);
 		this.account = await verifyCredentials();
