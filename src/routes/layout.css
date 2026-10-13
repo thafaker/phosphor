@@ -1,0 +1,94 @@
+@import 'tailwindcss';
+
+@theme {
+	--font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+@layer base {
+	html {
+		color-scheme: dark;
+	}
+
+	body {
+		background-color: #07110b;
+		background-image: radial-gradient(80% 50% at 50% 0%, rgba(16, 185, 129, 0.08), transparent 70%);
+		color: #d1fae5;
+		-webkit-font-smoothing: antialiased;
+	}
+
+	* {
+		scrollbar-width: thin;
+		scrollbar-color: rgba(52, 211, 153, 0.3) transparent;
+	}
+
+	::selection {
+		background: rgba(52, 211, 153, 0.3);
+	}
+}
+
+/* Sanitised HTML coming from GoToSocial's `content` field. */
+.status-content p {
+	margin-bottom: 0.75rem;
+}
+
+.status-content p:last-child {
+	margin-bottom: 0;
+}
+
+.status-content a {
+	color: #6ee7b7;
+	text-decoration: underline;
+	text-underline-offset: 2px;
+	overflow-wrap: anywhere;
+}
+
+.status-content a:hover {
+	color: #a7f3d0;
+}
+
+.status-content code {
+	background: rgba(16, 185, 129, 0.15);
+	border-radius: 0.25rem;
+	font-family: var(--font-mono);
+	font-size: 0.9em;
+	padding: 0.1em 0.35em;
+}
+
+.status-content pre {
+	background: #050b07;
+	border: 1px solid rgba(52, 211, 153, 0.15);
+	border-radius: 0.5rem;
+	margin-bottom: 0.75rem;
+	overflow-x: auto;
+	padding: 0.75rem;
+}
+
+.status-content pre code {
+	background: transparent;
+	padding: 0;
+}
+
+.status-content blockquote {
+	border-left: 3px solid rgba(52, 211, 153, 0.4);
+	color: #a7d9bd;
+	margin: 0.5rem 0;
+	padding-left: 0.75rem;
+}
+
+.status-content ul {
+	list-style: disc;
+	padding-left: 1.25rem;
+}
+
+.status-content ol {
+	list-style: decimal;
+	padding-left: 1.25rem;
+}
+
+.status-content h1,
+.status-content h2,
+.status-content h3 {
+	color: #ecfdf5;
+	font-weight: 600;
+	margin: 0.75rem 0 0.5rem;
+}
