@@ -110,6 +110,34 @@
 	}
 }
 
+/* ---------------------------------------------------------------------------
+ * Reduced motion
+ *
+ * Honours the OS `prefers-reduced-motion` setting by default; the in-app
+ * "Bewegung: reduziert" preference forces it on via [data-motion='reduce'].
+ * Animations are collapsed to a near-zero duration rather than removed, so
+ * hover/focus feedback and state changes still paint correctly.
+ * ------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+	*,
+	::before,
+	::after {
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.01ms !important;
+		scroll-behavior: auto !important;
+	}
+}
+
+:root[data-motion='reduce'] *,
+:root[data-motion='reduce'] ::before,
+:root[data-motion='reduce'] ::after {
+	animation-duration: 0.01ms !important;
+	animation-iteration-count: 1 !important;
+	transition-duration: 0.01ms !important;
+	scroll-behavior: auto !important;
+}
+
 /* Sanitised HTML coming from GoToSocial's `content` field. */
 .status-content p {
 	margin-bottom: 0.75rem;

@@ -68,6 +68,9 @@ nach der Autorisierung zu dieser Origin zurückfinden.
 - **Schriftgröße:** 100 % – 200 % in sechs Stufen. Statt einzelne Textstellen zu skalieren wird
   die Wurzel-Schriftgröße relativ zur Browser-Einstellung multipliziert, sodass auch die
   Bedienelemente mitwachsen und eine vorhandene Nutzerpräferenz respektiert bleibt.
+- **Bewegung:** Respektiert `prefers-reduced-motion` des Systems; in den Einstellungen lässt
+  sich „reduziert“ zusätzlich erzwingen. Animationen werden dann auf nahezu null Dauer gesetzt,
+  nicht entfernt — Zustandswechsel bleiben sichtbar.
 
 ## GoToSocial-Besonderheiten
 

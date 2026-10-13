@@ -21,6 +21,7 @@
 							: theme;
 					var root = document.documentElement;
 					root.dataset.theme = resolved;
+					root.dataset.motion = prefs.motion === 'reduce' ? 'reduce' : 'system';
 					root.style.setProperty('--text-scale', String(prefs.textScale || 1));
 					var meta = document.querySelector('meta[name="theme-color"]');
 					if (meta) meta.setAttribute('content', resolved === 'light' ? '#f5fbf8' : '#07110b');

@@ -3,6 +3,7 @@
 	import {
 		preferences,
 		TEXT_SCALES,
+		type MotionPreference,
 		type ThemePreference
 	} from '#lib/stores/preferences.svelte.ts';
 
@@ -10,6 +11,11 @@
 		{ value: 'system', label: 'System', icon: 'refresh' },
 		{ value: 'light', label: 'Hell', icon: 'sun' },
 		{ value: 'dark', label: 'Dunkel', icon: 'moon' }
+	];
+
+	const motionOptions: { value: MotionPreference; label: string; hint: string }[] = [
+		{ value: 'system', label: 'System', hint: 'Der Einstellung deines Geräts folgen' },
+		{ value: 'reduce', label: 'Reduziert', hint: 'Animationen immer minimieren' }
 	];
 
 	const percent = $derived(Math.round(preferences.textScale * 100));
@@ -39,6 +45,35 @@
 			>
 				<Icon name={option.icon} size={20} />
 				<span>{option.label}</span>
+			</button>
+		{/each}
+	</div>
+</section>
+
+<section class="border-b border-line px-4 py-5">
+	<h2 class="text-sm font-semibold text-ink-strong">Bewegung</h2>
+	<p class="mt-1 text-sm text-ink-soft">
+		Phosphor folgt standardmäßig der Systemeinstellung „Bewegung reduzieren“. Hier kannst du sie
+		unabhängig davon erzwingen.
+	</p>
+
+	<div class="mt-4 grid grid-cols-2 gap-2" role="group" aria-label="Bewegung">
+		{#each motionOptions as option (option.value)}
+			<button
+				type="button"
+				aria-pressed={preferences.motion === option.value}
+				onclick={() => preferences.setMotion(option.value)}
+				class="rounded-xl border border-line px-3 py-3 text-left transition hover:bg-accent/10 {preferences.motion ===
+				option.value
+					? 'border-accent/40 bg-accent/10'
+					: ''}"
+			>
+				<span
+					class="block text-sm font-medium {preferences.motion === option.value
+						? 'text-accent'
+						: 'text-ink-strong'}">{option.label}</span
+				>
+				<span class="mt-0.5 block text-xs text-ink-soft">{option.hint}</span>
 			</button>
 		{/each}
 	</div>

@@ -140,15 +140,21 @@ notiert sind, skaliert eine einzige Variable Text **und** Bedienelemente. `100 %
 auf die Browser-/OS-Vorgabe, eine bereits vorhandene Nutzerpräferenz bleibt also erhalten.
 
 **Persistenz & kein Flackern.** `src/lib/stores/preferences.svelte.ts` hält die Wahl
-(`theme`, `textScale`) und spiegelt sie nach `document.documentElement` (`data-theme`,
-`--text-scale`) sowie in das `theme-color`-Meta. Gespeichert wird unter `phosphor:prefs:v1`.
-Damit beim Laden kein heller/dunkler Blitz entsteht, wendet ein kurzes Inline-Skript in
-`app.html` die gespeicherten Werte **vor** dem ersten Paint an; der Store hält sich danach
-synchron.
+(`theme`, `textScale`, `motion`) und spiegelt sie nach `document.documentElement`
+(`data-theme`, `data-motion`, `--text-scale`) sowie in das `theme-color`-Meta. Gespeichert wird
+unter `phosphor:prefs:v1`. Damit beim Laden kein heller/dunkler Blitz entsteht, wendet ein
+kurzes Inline-Skript in `app.html` die gespeicherten Werte **vor** dem ersten Paint an; der
+Store hält sich danach synchron.
 
-**Umschalter.** Die Seite `/settings` bietet ein Segment für Hell/Dunkel/System und eine
-Schriftgrößensteuerung (A−/A+, Schieberegler, Zurücksetzen) mit Live-Vorschau. `'system'`
-lauscht auf `prefers-color-scheme` und folgt Änderungen zur Laufzeit.
+**Bewegung.** `prefers-reduced-motion: reduce` wird automatisch respektiert (CSS-Medienabfrage
+in `layout.css`), und `[data-motion='reduce']` erzwingt dasselbe unabhängig vom System. Die
+Regel setzt `animation-duration`/`transition-duration` auf `0.01ms` statt die Animationen zu
+entfernen, damit Hover-/Fokus-Rückmeldung und Zustandswechsel weiterhin korrekt gezeichnet
+werden.
+
+**Umschalter.** Die Seite `/settings` bietet Segmente für Hell/Dunkel/System, Bewegung
+(System/Reduziert) und eine Schriftgrößensteuerung (A−/A+, Schieberegler, Zurücksetzen) mit
+Live-Vorschau. `'system'` lauscht auf `prefers-color-scheme` und folgt Änderungen zur Laufzeit.
 
 ## Bewusste Design-Entscheidungen
 
@@ -162,7 +168,7 @@ lauscht auf `prefers-color-scheme` und folgt Änderungen zur Laufzeit.
 ## MVP-Stand
 
 ✅ Login, ✅ Start-/Lokale Timeline, ✅ Streaming, ✅ Composer, ✅ Favorit/Boost/Merken,
-✅ Thread, ✅ Benachrichtigungen, ✅ Hell/Dunkel/System + barrierefreie Schriftgröße.
+✅ Thread, ✅ Benachrichtigungen, ✅ Hell/Dunkel/System, ✅ Schriftgröße, ✅ reduzierte Bewegung.
 
 ## Nächste Schritte
 

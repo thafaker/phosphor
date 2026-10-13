@@ -2,15 +2,19 @@ const STORAGE_KEY = 'phosphor:prefs:v1';
 
 export type ThemePreference = 'system' | 'light' | 'dark';
 
+/** `system` follows the OS `prefers-reduced-motion` setting. */
+export type MotionPreference = 'system' | 'reduce';
+
 /** Steps for the accessible text-size control (100 % – 200 %). */
 export const TEXT_SCALES = [1, 1.125, 1.25, 1.5, 1.75, 2] as const;
 
 interface Persisted {
 	theme: ThemePreference;
 	textScale: number;
+	motion: MotionPreference;
 }
 
-const DEFAULTS: Persisted = { theme: 'system', textScale: 1 };
+const DEFAULTS: Persisted = { theme: 'system', textScale: 1, motion: 'system' };
 
 function load(): Persisted {
 	try {
@@ -22,7 +26,9 @@ function load(): Persisted {
 				? parsed.theme
 				: DEFAULTS.theme;
 		const scale = typeof parsed.textScale === 'number' ? parsed.textScale : DEFAULTS.textScale;
-		return { theme, textScale: closestScale(scale) };
+		const motion: MotionPreference =
+			parsed.motion === 'reduce' || parsed.motion === 'system' ? parsed.motion : DEFAULTS.motion;
+		return { theme, textScale: closestScale(scale), motion };
 	} catch {
 		return { ...DEFAULTS };
 	}
@@ -44,6 +50,7 @@ function resolve(theme: ThemePreference): 'light' | 'dark' {
 class Preferences {
 	theme = $state<ThemePreference>(DEFAULTS.theme);
 	textScale = $state<number>(DEFAULTS.textScale);
+	motion = $state<MotionPreference>(DEFAULTS.motion);
 
 	#media: MediaQueryList | null = null;
 
@@ -52,6 +59,7 @@ class Preferences {
 		const persisted = load();
 		this.theme = persisted.theme;
 		this.textScale = persisted.textScale;
+		this.motion = persisted.motion;
 
 		this.#media = window.matchMedia('(prefers-color-scheme: light)');
 		this.#media.addEventListener('change', this.#onSystemChange);
@@ -82,6 +90,12 @@ class Preferences {
 		this.apply();
 	}
 
+	setMotion(motion: MotionPreference): void {
+		this.motion = motion;
+		this.persist();
+		this.apply();
+	}
+
 	increaseText(): void {
 		const next = TEXT_SCALES.find((step) => step > this.textScale);
 		if (next) this.setTextScale(next);
@@ -101,6 +115,7 @@ class Preferences {
 		const root = document.documentElement;
 		const theme = resolve(this.theme);
 		root.dataset.theme = theme;
+		root.dataset.motion = this.motion;
 		root.style.setProperty('--text-scale', String(this.textScale));
 		document
 			.querySelector('meta[name="theme-color"]')
@@ -111,7 +126,7 @@ class Preferences {
 		try {
 			localStorage.setItem(
 				STORAGE_KEY,
-				JSON.stringify({ theme: this.theme, textScale: this.textScale })
+				JSON.stringify({ theme: this.theme, textScale: this.textScale, motion: this.motion })
 			);
 		} catch {
 			// ignore (e.g. storage disabled)
