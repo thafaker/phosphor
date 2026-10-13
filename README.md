@@ -18,6 +18,8 @@ Bereits dabei:
 - Favorisieren, Boosten, Merken
 - Thread-Ansicht mit Kontext
 - Benachrichtigungen
+- Erscheinungsbild: Hell / Dunkel / System
+- Barrierefreie Schriftgröße (100 % – 200 %), wirkt auf die ganze App
 
 ## Stack
 
@@ -58,6 +60,14 @@ Dann <http://localhost:5173> öffnen und auf „Anmelden“ klicken.
 
 Die `redirect_uri` beim Login ist `window.location.origin + /callback`. Der Browser muss also
 nach der Autorisierung zu dieser Origin zurückfinden.
+
+## Barrierefreiheit
+
+- **Farbschema:** Hell, Dunkel oder System (folgt `prefers-color-scheme`). Umschaltbar unter
+  _Einstellungen_; die Wahl wird gespeichert und vor dem ersten Rendern angewendet.
+- **Schriftgröße:** 100 % – 200 % in sechs Stufen. Statt einzelne Textstellen zu skalieren wird
+  die Wurzel-Schriftgröße relativ zur Browser-Einstellung multipliziert, sodass auch die
+  Bedienelemente mitwachsen und eine vorhandene Nutzerpräferenz respektiert bleibt.
 
 ## GoToSocial-Besonderheiten
 

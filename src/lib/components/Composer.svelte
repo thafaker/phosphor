@@ -73,9 +73,9 @@
 	}
 </script>
 
-<section class="border-b border-emerald-400/10 px-4 py-3">
+<section class="border-b border-line px-4 py-3">
 	{#if inReplyTo}
-		<p class="mb-2 text-sm text-emerald-300/60">
+		<p class="mb-2 text-sm text-ink-soft">
 			Antwort an {@html replyName}
 		</p>
 	{/if}
@@ -93,7 +93,7 @@
 					type="text"
 					bind:value={spoilerText}
 					placeholder="Inhaltswarnung (CW)"
-					class="mb-2 w-full rounded-md border border-amber-300/30 bg-black/30 px-3 py-1.5 text-sm text-amber-100 placeholder-amber-200/40 outline-none focus:border-amber-300/60"
+					class="mb-2 w-full rounded-md border border-warn/30 bg-inset px-3 py-1.5 text-sm text-warn placeholder-ink-faint outline-none focus:border-warn/60"
 				/>
 			{/if}
 
@@ -104,15 +104,15 @@
 				{autofocus}
 				rows={inReplyTo ? 2 : 3}
 				onkeydown={onKeydown}
-				class="w-full resize-none bg-transparent text-[0.95rem] leading-relaxed text-emerald-50 placeholder-emerald-300/40 outline-none"
+				class="w-full resize-none bg-transparent text-[0.95rem] leading-relaxed text-ink-strong placeholder-ink-faint outline-none"
 			></textarea>
 
 			<div class="mt-2 flex items-center gap-2">
 				<button
 					type="button"
-					class="flex items-center gap-1 rounded-md px-2 py-1 text-xs hover:bg-emerald-400/10 {cwEnabled
-						? 'text-amber-300'
-						: 'text-emerald-300/60'}"
+					class="flex items-center gap-1 rounded-md px-2 py-1 text-xs hover:bg-accent/10 {cwEnabled
+						? 'text-warn'
+						: 'text-ink-soft'}"
 					onclick={() => (cwEnabled = !cwEnabled)}
 					title="Inhaltswarnung"
 				>
@@ -120,11 +120,11 @@
 					CW
 				</button>
 
-				<label class="flex items-center gap-1 text-xs text-emerald-300/60">
+				<label class="flex items-center gap-1 text-xs text-ink-soft">
 					<Icon name="globe" size={15} />
 					<select
 						bind:value={visibility}
-						class="cursor-pointer rounded-md bg-transparent py-1 pr-1 text-xs text-emerald-200 outline-none hover:bg-emerald-400/10"
+						class="cursor-pointer rounded-md bg-transparent py-1 pr-1 text-xs text-ink outline-none hover:bg-accent/10"
 					>
 						<option value="public">Öffentlich</option>
 						<option value="unlisted">Nicht gelistet</option>
@@ -135,10 +135,10 @@
 
 				<span
 					class="ml-auto text-xs tabular-nums {remaining < 0
-						? 'text-red-400'
+						? 'text-danger'
 						: remaining <= 200
-							? 'text-amber-300'
-							: 'text-emerald-300/40'}"
+							? 'text-warn'
+							: 'text-ink-faint'}"
 				>
 					{remaining}
 				</span>
@@ -147,7 +147,7 @@
 					type="button"
 					disabled={!canSubmit}
 					onclick={submit}
-					class="flex items-center gap-1.5 rounded-full bg-emerald-500/90 px-3.5 py-1.5 text-sm font-semibold text-emerald-950 transition enabled:hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-40"
+					class="flex items-center gap-1.5 rounded-full bg-accent px-3.5 py-1.5 text-sm font-semibold text-accent-ink transition enabled:hover:bg-accent/90 disabled:cursor-not-allowed disabled:opacity-40"
 				>
 					<Icon name="send" size={15} />
 					{submitting ? 'Sendet…' : 'Posten'}
@@ -155,7 +155,7 @@
 			</div>
 
 			{#if error}
-				<p class="mt-2 text-sm text-red-400">{error}</p>
+				<p class="mt-2 text-sm text-danger">{error}</p>
 			{/if}
 		</div>
 	</div>

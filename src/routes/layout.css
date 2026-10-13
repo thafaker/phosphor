@@ -1,28 +1,112 @@
 @import 'tailwindcss';
 
-@theme {
+/* ---------------------------------------------------------------------------
+ * Theme tokens
+ *
+ * Components use the semantic utilities (bg-canvas, text-ink, border-line, …)
+ * instead of literal colours, so switching `data-theme` on <html> restyles the
+ * whole app at runtime. Dark is the default; light is opt-in.
+ * ------------------------------------------------------------------------- */
+:root {
+	color-scheme: dark;
+
+	--canvas: #07110b;
+	--surface: #0b1710;
+	--surface-2: #050b07;
+	--inset: rgb(0 0 0 / 0.4);
+	--scrim: rgb(0 0 0 / 0.72);
+
+	--ink-strong: #ecfdf5;
+	--ink: #d1fae5;
+	--ink-soft: rgb(167 243 208 / 0.75);
+	--ink-faint: rgb(110 231 183 / 0.5);
+
+	--line: rgb(52 211 153 / 0.12);
+	--accent: #34d399;
+	--accent-ink: #022c22;
+	--warn: #fcd34d;
+	--danger: #f87171;
+
+	--glow: rgb(16 185 129 / 0.1);
+	--scrollbar: rgb(52 211 153 / 0.3);
+	--selection: rgb(52 211 153 / 0.3);
+	--code-bg: rgb(16 185 129 / 0.15);
+	--quote: #a7d9bd;
+}
+
+:root[data-theme='light'] {
+	color-scheme: light;
+
+	--canvas: #f5fbf8;
+	--surface: #ffffff;
+	--surface-2: #eef8f2;
+	--inset: rgb(6 78 59 / 0.07);
+	--scrim: rgb(255 255 255 / 0.82);
+
+	--ink-strong: #032b1f;
+	--ink: #0b3d2c;
+	--ink-soft: rgb(6 78 59 / 0.72);
+	--ink-faint: rgb(6 95 70 / 0.55);
+
+	--line: rgb(6 95 70 / 0.16);
+	--accent: #059669;
+	--accent-ink: #ffffff;
+	--warn: #b45309;
+	--danger: #dc2626;
+
+	--glow: rgb(5 150 105 / 0.12);
+	--scrollbar: rgb(5 150 105 / 0.35);
+	--selection: rgb(16 185 129 / 0.25);
+	--code-bg: rgb(5 150 105 / 0.12);
+	--quote: #0b3d2c;
+}
+
+/* `inline` keeps the utilities pointing at the live custom properties, which is
+ * what makes runtime theme switching work. */
+@theme inline {
 	--font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+	--color-canvas: var(--canvas);
+	--color-surface: var(--surface);
+	--color-surface-2: var(--surface-2);
+	--color-inset: var(--inset);
+	--color-scrim: var(--scrim);
+
+	--color-ink-strong: var(--ink-strong);
+	--color-ink: var(--ink);
+	--color-ink-soft: var(--ink-soft);
+	--color-ink-faint: var(--ink-faint);
+
+	--color-line: var(--line);
+	--color-accent: var(--accent);
+	--color-accent-ink: var(--accent-ink);
+	--color-warn: var(--warn);
+	--color-danger: var(--danger);
+
+	--shadow-glow: 0 0 60px var(--glow);
 }
 
 @layer base {
+	/* Scales every rem-based size — text, spacing and controls — relative to the
+	 * browser's own font-size, so a user's OS/browser preference is respected. */
 	html {
-		color-scheme: dark;
+		font-size: calc(100% * var(--text-scale, 1));
 	}
 
 	body {
-		background-color: #07110b;
-		background-image: radial-gradient(80% 50% at 50% 0%, rgba(16, 185, 129, 0.08), transparent 70%);
-		color: #d1fae5;
+		background-color: var(--canvas);
+		background-image: radial-gradient(80% 50% at 50% 0%, var(--glow), transparent 70%);
+		color: var(--ink);
 		-webkit-font-smoothing: antialiased;
 	}
 
 	* {
 		scrollbar-width: thin;
-		scrollbar-color: rgba(52, 211, 153, 0.3) transparent;
+		scrollbar-color: var(--scrollbar) transparent;
 	}
 
 	::selection {
-		background: rgba(52, 211, 153, 0.3);
+		background: var(--selection);
 	}
 }
 
@@ -36,18 +120,18 @@
 }
 
 .status-content a {
-	color: #6ee7b7;
+	color: var(--accent);
 	text-decoration: underline;
 	text-underline-offset: 2px;
 	overflow-wrap: anywhere;
 }
 
 .status-content a:hover {
-	color: #a7f3d0;
+	color: var(--ink-strong);
 }
 
 .status-content code {
-	background: rgba(16, 185, 129, 0.15);
+	background: var(--code-bg);
 	border-radius: 0.25rem;
 	font-family: var(--font-mono);
 	font-size: 0.9em;
@@ -55,8 +139,8 @@
 }
 
 .status-content pre {
-	background: #050b07;
-	border: 1px solid rgba(52, 211, 153, 0.15);
+	background: var(--surface-2);
+	border: 1px solid var(--line);
 	border-radius: 0.5rem;
 	margin-bottom: 0.75rem;
 	overflow-x: auto;
@@ -69,8 +153,8 @@
 }
 
 .status-content blockquote {
-	border-left: 3px solid rgba(52, 211, 153, 0.4);
-	color: #a7d9bd;
+	border-left: 3px solid var(--accent);
+	color: var(--quote);
 	margin: 0.5rem 0;
 	padding-left: 0.75rem;
 }
@@ -88,7 +172,7 @@
 .status-content h1,
 .status-content h2,
 .status-content h3 {
-	color: #ecfdf5;
+	color: var(--ink-strong);
 	font-weight: 600;
 	margin: 0.75rem 0 0.5rem;
 }

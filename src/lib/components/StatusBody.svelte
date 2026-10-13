@@ -103,34 +103,34 @@
 				href={status.account.url}
 				target="_blank"
 				rel="noopener noreferrer"
-				class="font-semibold text-emerald-50 hover:underline"
+				class="font-semibold text-ink-strong hover:underline"
 			>
 				{@html nameHtml}
 			</a>
-			<span class="text-emerald-300/50">@{status.account.acct}</span>
-			<span class="text-emerald-300/30">·</span>
+			<span class="text-ink-faint">@{status.account.acct}</span>
+			<span class="text-ink-faint">·</span>
 			<a
 				href={`/status/${status.id}`}
 				title={absoluteTime(status.created_at)}
-				class="text-emerald-300/50 hover:text-emerald-200"
+				class="text-ink-faint hover:text-ink-strong"
 			>
 				{relativeTime(status.created_at)}
 			</a>
-			<Icon name={visibilityIcon} size={13} class="text-emerald-300/40" />
+			<Icon name={visibilityIcon} size={13} class="text-ink-faint" />
 			{#if status.edited_at}
-				<span class="text-emerald-300/40">· bearbeitet</span>
+				<span class="text-ink-faint">· bearbeitet</span>
 			{/if}
 		</header>
 
 		{#if status.spoiler_text}
 			<div class="mt-1.5">
-				<p class="text-sm text-amber-200/90">
+				<p class="text-sm text-warn">
 					<span class="font-semibold">CW:</span>
 					{status.spoiler_text}
 				</p>
 				<button
 					type="button"
-					class="mt-1 rounded-md border border-emerald-400/25 px-2 py-1 text-xs text-emerald-200 hover:bg-emerald-400/10"
+					class="mt-1 rounded-md border border-accent/40 px-2 py-1 text-xs text-ink hover:bg-accent/10"
 					onclick={() => (showContent = !showContent)}
 				>
 					{showContent ? 'Inhalt verbergen' : 'Inhalt anzeigen'}
@@ -140,7 +140,7 @@
 
 		{#if showContent}
 			<div
-				class="status-content mt-1 text-[0.95rem] leading-relaxed break-words text-emerald-50/90"
+				class="status-content mt-1 text-[0.95rem] leading-relaxed break-words text-ink"
 				class:text-base={detail}
 			>
 				<!-- GoToSocial returns sanitised HTML here. -->
@@ -152,19 +152,19 @@
 			{#if status.poll}
 				<ul class="mt-3 space-y-1.5">
 					{#each status.poll.options as option, index (index)}
-						<li class="relative overflow-hidden rounded-md border border-emerald-400/15 text-sm">
+						<li class="relative overflow-hidden rounded-md border border-line text-sm">
 							<div
-								class="absolute inset-y-0 left-0 bg-emerald-400/15"
+								class="absolute inset-y-0 left-0 bg-accent/15"
 								style="width: {pollPercent(option.votes_count)}%"
 							></div>
 							<div class="relative flex justify-between px-2.5 py-1.5">
 								<span>{option.title}</span>
-								<span class="text-emerald-300/60">{option.votes_count ?? 0}</span>
+								<span class="text-ink-soft">{option.votes_count ?? 0}</span>
 							</div>
 						</li>
 					{/each}
 				</ul>
-				<p class="mt-1 text-xs text-emerald-300/50">
+				<p class="mt-1 text-xs text-ink-faint">
 					{status.poll.votes_count} Stimmen
 					{status.poll.expired ? '· beendet' : ''}
 				</p>
@@ -175,7 +175,7 @@
 					href={status.card.url}
 					target="_blank"
 					rel="noopener noreferrer"
-					class="mt-3 block overflow-hidden rounded-lg border border-emerald-400/15 hover:bg-emerald-400/5"
+					class="mt-3 block overflow-hidden rounded-lg border border-line hover:bg-accent/5"
 				>
 					{#if status.card.image}
 						<img
@@ -188,12 +188,12 @@
 					{/if}
 					<div class="p-3">
 						{#if status.card.provider_name}
-							<p class="text-xs tracking-wide text-emerald-300/50 uppercase">
+							<p class="text-xs tracking-wide text-ink-faint uppercase">
 								{status.card.provider_name}
 							</p>
 						{/if}
-						<p class="font-medium text-emerald-50">{status.card.title}</p>
-						<p class="mt-0.5 line-clamp-2 text-sm text-emerald-100/60">
+						<p class="font-medium text-ink-strong">{status.card.title}</p>
+						<p class="mt-0.5 line-clamp-2 text-sm text-ink-soft">
 							{status.card.description}
 						</p>
 					</div>
@@ -201,10 +201,10 @@
 			{/if}
 		{/if}
 
-		<footer class="mt-2.5 flex items-center gap-6 text-emerald-300/60">
+		<footer class="mt-2.5 flex items-center gap-6 text-ink-soft">
 			<a
 				href={`/status/${status.id}`}
-				class="flex items-center gap-1.5 text-sm hover:text-emerald-200"
+				class="flex items-center gap-1.5 text-sm hover:text-ink-strong"
 				title="Antworten"
 			>
 				<Icon name="reply" size={17} />
@@ -213,8 +213,8 @@
 
 			<button
 				type="button"
-				class="flex items-center gap-1.5 text-sm hover:text-emerald-400"
-				class:text-emerald-400={status.reblogged}
+				class="flex items-center gap-1.5 text-sm hover:text-accent"
+				class:text-accent={status.reblogged}
 				onclick={toggleReblog}
 				title="Boosten"
 			>
@@ -224,8 +224,8 @@
 
 			<button
 				type="button"
-				class="flex items-center gap-1.5 text-sm hover:text-amber-300"
-				class:text-amber-300={status.favourited}
+				class="flex items-center gap-1.5 text-sm hover:text-warn"
+				class:text-warn={status.favourited}
 				onclick={toggleFavourite}
 				title="Favorisieren"
 			>
@@ -235,8 +235,8 @@
 
 			<button
 				type="button"
-				class="ml-auto flex items-center gap-1.5 text-sm hover:text-emerald-300"
-				class:text-emerald-300={status.bookmarked}
+				class="ml-auto flex items-center gap-1.5 text-sm hover:text-accent"
+				class:text-accent={status.bookmarked}
 				onclick={toggleBookmark}
 				title="Merken"
 			>

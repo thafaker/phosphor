@@ -10,28 +10,28 @@
 
 <div class="flex min-h-dvh items-center justify-center px-4">
 	<div
-		class="w-full max-w-sm rounded-2xl border border-emerald-400/15 bg-[#0b1710] p-6 text-center shadow-[0_0_60px_rgba(16,185,129,0.08)]"
+		class="w-full max-w-sm rounded-2xl border border-line bg-surface p-6 text-center shadow-glow"
 	>
-		<Icon name="sparkles" size={40} class="mx-auto text-emerald-400" />
-		<h1 class="mt-3 text-2xl font-bold tracking-tight text-emerald-300">{APP_NAME}</h1>
-		<p class="mt-1 text-sm text-emerald-200/60">
+		<Icon name="sparkles" size={40} class="mx-auto text-accent" />
+		<h1 class="mt-3 text-2xl font-bold tracking-tight text-accent">{APP_NAME}</h1>
+		<p class="mt-1 text-sm text-ink-soft">
 			Ein schlankes Web-Frontend für
-			<span class="text-emerald-200">{INSTANCE_HOST}</span>.
+			<span class="text-ink">{INSTANCE_HOST}</span>.
 		</p>
 
 		<button
 			type="button"
 			onclick={login}
-			class="mt-6 w-full rounded-full bg-emerald-500/90 px-4 py-2.5 font-semibold text-emerald-950 transition hover:bg-emerald-400"
+			class="mt-6 w-full rounded-full bg-accent px-4 py-2.5 font-semibold text-accent-ink transition hover:bg-accent/90"
 		>
 			Mit {INSTANCE_HOST} anmelden
 		</button>
 
 		{#if session.error}
-			<p class="mt-3 text-sm text-red-400">{session.error}</p>
+			<p class="mt-3 text-sm text-danger">{session.error}</p>
 		{/if}
 
-		<p class="mt-4 text-xs leading-relaxed text-emerald-300/40">
+		<p class="mt-4 text-xs leading-relaxed text-ink-faint">
 			Du wirst zur Anmeldung deiner Instanz weitergeleitet und kehrst danach hierher zurück.
 		</p>
 	</div>

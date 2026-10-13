@@ -32,19 +32,19 @@
 
 <div class="flex min-h-dvh items-center justify-center px-4 text-center">
 	{#if errorMessage}
-		<div class="max-w-sm rounded-2xl border border-red-400/30 bg-red-500/10 p-6">
-			<Icon name="alert" size={32} class="mx-auto text-red-300" />
-			<h1 class="mt-3 text-lg font-semibold text-red-100">Anmeldung fehlgeschlagen</h1>
-			<p class="mt-2 text-sm text-red-200/80">{errorMessage}</p>
+		<div class="max-w-sm rounded-2xl border border-danger/30 bg-danger/10 p-6">
+			<Icon name="alert" size={32} class="mx-auto text-danger" />
+			<h1 class="mt-3 text-lg font-semibold text-danger">Anmeldung fehlgeschlagen</h1>
+			<p class="mt-2 text-sm text-danger">{errorMessage}</p>
 			<a
 				href="/login"
-				class="mt-4 inline-block rounded-full bg-red-400/20 px-4 py-2 text-sm text-red-100 hover:bg-red-400/30"
+				class="mt-4 inline-block rounded-full bg-danger/20 px-4 py-2 text-sm text-danger hover:bg-danger/30"
 			>
 				Zurück zum Login
 			</a>
 		</div>
 	{:else}
-		<div class="font-mono text-emerald-400">
+		<div class="font-mono text-accent">
 			<Icon name="refresh" size={24} class="mx-auto animate-spin" />
 			<p class="mt-3 animate-pulse text-sm">Anmeldung wird abgeschlossen…</p>
 		</div>

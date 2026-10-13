@@ -38,24 +38,24 @@
 </script>
 
 <header
-	class="sticky top-0 z-20 flex items-center gap-3 border-b border-emerald-400/10 bg-[#07110b]/85 px-4 py-3 backdrop-blur"
+	class="sticky top-0 z-20 flex items-center gap-3 border-b border-line bg-canvas/85 px-4 py-3 backdrop-blur"
 >
 	<a
 		href="/"
-		class="rounded-md p-1 text-emerald-300/60 hover:bg-emerald-400/10 hover:text-emerald-200"
+		class="rounded-md p-1 text-ink-soft hover:bg-accent/10 hover:text-ink-strong"
 		aria-label="Zurück"
 	>
 		<Icon name="chevron-left" size={20} />
 	</a>
-	<h1 class="text-lg font-semibold tracking-tight text-emerald-50">Beitrag</h1>
+	<h1 class="text-lg font-semibold tracking-tight text-ink-strong">Beitrag</h1>
 </header>
 
 {#if loading}
-	<div class="flex justify-center py-12 text-emerald-400/50">
+	<div class="flex justify-center py-12 text-ink-soft">
 		<Icon name="refresh" size={24} class="animate-spin" />
 	</div>
 {:else if error}
-	<div class="m-4 rounded-lg border border-red-400/30 bg-red-500/10 p-3 text-sm text-red-200">
+	<div class="m-4 rounded-lg border border-danger/30 bg-danger/10 p-3 text-sm text-danger">
 		{error}
 	</div>
 {:else if status}

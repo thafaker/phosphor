@@ -16,5 +16,5 @@
 	height={size}
 	loading="lazy"
 	referrerpolicy="no-referrer"
-	class="shrink-0 rounded-full bg-black/50 object-cover ring-1 ring-emerald-400/15 {className}"
+	class="shrink-0 rounded-full bg-inset object-cover ring-1 ring-line {className}"
 />

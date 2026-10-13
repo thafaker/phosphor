@@ -18,9 +18,9 @@
 	);
 </script>
 
-<article class="border-b border-emerald-400/10 transition-colors hover:bg-emerald-400/[0.03]">
+<article class="border-b border-line transition-colors hover:bg-accent/5">
 	{#if booster}
-		<div class="flex items-center gap-2 px-4 pt-3 text-xs text-emerald-300/70">
+		<div class="flex items-center gap-2 px-4 pt-3 text-xs text-ink-soft">
 			<Icon name="boost" size={14} />
 			<a href={booster.url} target="_blank" rel="noopener noreferrer" class="hover:underline">
 				{@html boosterName}

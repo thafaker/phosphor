@@ -11,6 +11,7 @@
 	import { session } from '#lib/auth/session.svelte.ts';
 	import { homeFeed, localFeed } from '#lib/stores/feed.svelte.ts';
 	import { notificationsFeed } from '#lib/stores/notifications.svelte.ts';
+	import { preferences } from '#lib/stores/preferences.svelte.ts';
 	import { streamer } from '#lib/stores/streamer.svelte.ts';
 
 	let { children }: LayoutProps = $props();
@@ -18,6 +19,7 @@
 	const isAuthRoute = $derived(page.url.pathname === '/login' || page.url.pathname === '/callback');
 
 	onMount(() => {
+		preferences.init();
 		void session.init();
 	});
 
@@ -71,10 +73,10 @@
 </svelte:head>
 
 {#if !session.ready}
-	<div class="flex min-h-dvh items-center justify-center font-mono text-emerald-400">
+	<div class="flex min-h-dvh items-center justify-center font-mono text-accent">
 		<div class="text-center">
 			<p class="text-sm tracking-[0.3em]">PHOSPHOR</p>
-			<p class="mt-1 animate-pulse text-xs text-emerald-400/60">booting…</p>
+			<p class="mt-1 animate-pulse text-xs text-ink-soft">booting…</p>
 		</div>
 	</div>
 {:else if isAuthRoute}
@@ -82,12 +84,12 @@
 {:else if session.loggedIn}
 	<div class="mx-auto flex min-h-dvh w-full max-w-6xl">
 		<Sidebar />
-		<main class="min-h-dvh w-full max-w-2xl flex-1 border-emerald-400/10 pb-16 md:border-x md:pb-0">
+		<main class="min-h-dvh w-full max-w-2xl flex-1 border-line pb-16 md:border-x md:pb-0">
 			{@render children()}
 		</main>
 	</div>
 {:else}
-	<div class="flex min-h-dvh items-center justify-center text-emerald-300/40">
+	<div class="flex min-h-dvh items-center justify-center text-ink-faint">
 		<Icon name="refresh" size={24} class="animate-spin" />
 	</div>
 {/if}

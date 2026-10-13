@@ -46,28 +46,26 @@
 	});
 </script>
 
-<header
-	class="sticky top-0 z-20 border-b border-emerald-400/10 bg-[#07110b]/85 px-4 py-3 backdrop-blur"
->
-	<h1 class="flex items-center gap-2 text-lg font-semibold tracking-tight text-emerald-50">
-		<Icon name="bell" size={18} class="text-emerald-400" />
+<header class="sticky top-0 z-20 border-b border-line bg-canvas/85 px-4 py-3 backdrop-blur">
+	<h1 class="flex items-center gap-2 text-lg font-semibold tracking-tight text-ink-strong">
+		<Icon name="bell" size={18} class="text-accent" />
 		Meldungen
 	</h1>
 </header>
 
 {#if notificationsFeed.error}
-	<div class="m-4 rounded-lg border border-red-400/30 bg-red-500/10 p-3 text-sm text-red-200">
+	<div class="m-4 rounded-lg border border-danger/30 bg-danger/10 p-3 text-sm text-danger">
 		{notificationsFeed.error}
 	</div>
 {/if}
 
 {#if notificationsFeed.loading && !notificationsFeed.items.length}
-	<div class="flex justify-center py-10 text-emerald-400/50">
+	<div class="flex justify-center py-10 text-ink-soft">
 		<Icon name="refresh" size={22} class="animate-spin" />
 	</div>
 {:else if !notificationsFeed.items.length && notificationsFeed.loaded}
-	<div class="px-6 py-16 text-center text-emerald-300/50">
-		<Icon name="bell" size={28} class="mx-auto mb-3 text-emerald-400/50" />
+	<div class="px-6 py-16 text-center text-ink-faint">
+		<Icon name="bell" size={28} class="mx-auto mb-3 text-ink-soft" />
 		<p>Noch keine Meldungen.</p>
 	</div>
 {:else}
@@ -75,22 +73,22 @@
 		{#each notificationsFeed.items as notification (notification.id)}
 			{@const info = describe(notification.type)}
 			{@const name = notification.account.display_name || notification.account.username}
-			<li class="border-b border-emerald-400/10">
+			<li class="border-b border-line">
 				<div class="flex items-center gap-3 px-4 pt-3">
-					<Icon name={info.icon} size={18} class="text-emerald-400" />
-					<div class="min-w-0 flex-1 text-sm text-emerald-200/80">
+					<Icon name={info.icon} size={18} class="text-accent" />
+					<div class="min-w-0 flex-1 text-sm text-ink-soft">
 						<a
 							href={notification.account.url}
 							target="_blank"
 							rel="noopener noreferrer"
-							class="font-semibold text-emerald-50 hover:underline"
+							class="font-semibold text-ink-strong hover:underline"
 						>
 							{@html emojify(name, notification.account.emojis)}
 						</a>
 						{info.label}
 					</div>
 					<Avatar src={notification.account.avatar_static} alt={name} size={32} />
-					<span class="text-xs text-emerald-300/40">
+					<span class="text-xs text-ink-faint">
 						{relativeTime(notification.created_at)}
 					</span>
 				</div>
@@ -107,7 +105,7 @@
 <div bind:this={sentinel} class="h-px"></div>
 
 {#if notificationsFeed.loading && notificationsFeed.items.length}
-	<div class="flex justify-center py-4 text-emerald-400/60">
+	<div class="flex justify-center py-4 text-ink-soft">
 		<Icon name="refresh" size={20} class="animate-spin" />
 	</div>
 {/if}

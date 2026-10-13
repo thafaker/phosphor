@@ -83,6 +83,7 @@ src/
       streamer.svelte.ts      # zentrale Stream-Verteilung
       feed.svelte.ts          # TimelineFeed-Klasse; homeFeed & localFeed
       notifications.svelte.ts # Meldungen + Unread-Zähler
+      preferences.svelte.ts   # Theme + Schriftgröße (persistiert)
     components/
       Icon.svelte             # eigene Inline-SVG-Icons (keine Icon-Dependency)
       Avatar.svelte
@@ -101,6 +102,7 @@ src/
     callback/+page.svelte
     local/+page.svelte        # lokale Timeline
     notifications/+page.svelte
+    settings/+page.svelte     # Erscheinungsbild & Schriftgröße
     status/[id]/+page.svelte  # Thread (Vorfahren + Hauptstatus + Antworten)
 ```
 
@@ -116,6 +118,38 @@ session.token ──▶ api/client (Bearer) ◀───────────
 Aktionen (Favorit, Boost, Merken) werden optimistisch im Store-Objekt gesetzt und bei einem
 API-Fehler zurückgerollt. Da die Stores `$state` verwenden, greifen die Änderungen direkt in der UI.
 
+## Erscheinungsbild & Barrierefreiheit
+
+Phosphor hatte ursprünglich ein festes Dark-Theme. Barrierefreiheit hat Vorrang, deshalb gibt
+es jetzt beides.
+
+**Farben als Tokens.** Komponenten benutzen keine literalen Farben mehr, sondern semantische
+Utilities (`bg-canvas`, `bg-surface`, `text-ink-strong`, `text-ink`, `text-ink-soft`,
+`text-ink-faint`, `border-line`, `text-accent`, `text-warn`, `text-danger`, `bg-scrim`, …).
+Definiert werden sie in `src/routes/layout.css`:
+
+- `:root` hält die Dark-Werte, `:root[data-theme='light']` überschreibt sie.
+- Ein `@theme inline`-Block mappt Tailwinds Farb-Namespace auf die Custom Properties
+  (`--color-canvas: var(--canvas)` usw.). `inline` ist entscheidend: dadurch referenzieren die
+  generierten Utilities die Live-Variablen und ein Theme-Wechsel wirkt zur Laufzeit.
+- `body`, Scrollbars, Auswahl und `.status-content` nutzen dieselben Variablen.
+
+**Schriftgröße.** Statt einzelne `font-size`-Werte zu ändern, setzt `layout.css`
+`html { font-size: calc(100% * var(--text-scale, 1)); }`. Da alle Tailwind-Größen in `rem`
+notiert sind, skaliert eine einzige Variable Text **und** Bedienelemente. `100 %` bezieht sich
+auf die Browser-/OS-Vorgabe, eine bereits vorhandene Nutzerpräferenz bleibt also erhalten.
+
+**Persistenz & kein Flackern.** `src/lib/stores/preferences.svelte.ts` hält die Wahl
+(`theme`, `textScale`) und spiegelt sie nach `document.documentElement` (`data-theme`,
+`--text-scale`) sowie in das `theme-color`-Meta. Gespeichert wird unter `phosphor:prefs:v1`.
+Damit beim Laden kein heller/dunkler Blitz entsteht, wendet ein kurzes Inline-Skript in
+`app.html` die gespeicherten Werte **vor** dem ersten Paint an; der Store hält sich danach
+synchron.
+
+**Umschalter.** Die Seite `/settings` bietet ein Segment für Hell/Dunkel/System und eine
+Schriftgrößensteuerung (A−/A+, Schieberegler, Zurücksetzen) mit Live-Vorschau. `'system'`
+lauscht auf `prefers-color-scheme` und folgt Änderungen zur Laufzeit.
+
 ## Bewusste Design-Entscheidungen
 
 - **Eigener API-Client statt `masto.js`.** Die genutzte API-Fläche ist klein; eigener Code
@@ -128,7 +162,7 @@ API-Fehler zurückgerollt. Da die Stores `$state` verwenden, greifen die Änderu
 ## MVP-Stand
 
 ✅ Login, ✅ Start-/Lokale Timeline, ✅ Streaming, ✅ Composer, ✅ Favorit/Boost/Merken,
-✅ Thread, ✅ Benachrichtigungen.
+✅ Thread, ✅ Benachrichtigungen, ✅ Hell/Dunkel/System + barrierefreie Schriftgröße.
 
 ## Nächste Schritte
 
