@@ -88,7 +88,7 @@
 			step="1"
 			value={scaleIndex}
 			oninput={(event) => preferences.setTextScale(TEXT_SCALES[Number(event.currentTarget.value)])}
-			class="h-2 w-full cursor-pointer appearance-none rounded-full bg-accent/20 accent-accent"
+			class="w-full accent-accent"
 		/>
 	</label>
 
