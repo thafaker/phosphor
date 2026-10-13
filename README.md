@@ -86,4 +86,4 @@ Mehr Details in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 ## Lizenz
 
-Noch nicht festgelegt. Naheliegend wären AGPL-3.0 (wie Pinafore) oder MIT (wie Phanpy/Elk).
+MIT — siehe [`LICENSE`](./LICENSE).
