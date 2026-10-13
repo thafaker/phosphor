@@ -104,7 +104,7 @@
 				{autofocus}
 				rows={inReplyTo ? 2 : 3}
 				onkeydown={onKeydown}
-				class="w-full resize-none bg-transparent text-[0.95rem] leading-relaxed text-ink-strong placeholder-ink-faint outline-none"
+				class="w-full resize-none bg-transparent text-post leading-relaxed text-ink-strong placeholder-ink-faint outline-none"
 			></textarea>
 
 			<div class="mt-2 flex items-center gap-2">

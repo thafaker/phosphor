@@ -90,6 +90,7 @@
 	stroke-width="1.75"
 	stroke-linecap="round"
 	stroke-linejoin="round"
+	style="width: calc({size}px * var(--ui-scale)); height: calc({size}px * var(--ui-scale))"
 	class={className}
 	aria-hidden="true"
 >

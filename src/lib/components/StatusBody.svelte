@@ -140,7 +140,7 @@
 
 		{#if showContent}
 			<div
-				class="status-content mt-1 text-[0.95rem] leading-relaxed break-words text-ink"
+				class="status-content mt-1 text-post leading-relaxed break-words text-ink"
 				class:text-base={detail}
 			>
 				<!-- GoToSocial returns sanitised HTML here. -->

@@ -51,11 +51,14 @@
 {#if feed.loading && !feed.items.length}
 	{#each Array(5) as _, index (index)}
 		<div class="flex animate-pulse gap-3 border-b border-line px-4 py-4">
-			<div class="h-11 w-11 shrink-0 rounded-full bg-accent/10"></div>
+			<div
+				class="shrink-0 rounded-full bg-accent/10"
+				style="width: calc(44px * var(--ui-scale)); height: calc(44px * var(--ui-scale))"
+			></div>
 			<div class="flex-1 space-y-2">
-				<div class="h-3 w-40 rounded bg-accent/10"></div>
-				<div class="h-3 w-full rounded bg-accent/10"></div>
-				<div class="h-3 w-2/3 rounded bg-accent/10"></div>
+				<div class="w-40 rounded bg-accent/10" style="height: calc(12px * var(--ui-scale))"></div>
+				<div class="w-full rounded bg-accent/10" style="height: calc(12px * var(--ui-scale))"></div>
+				<div class="w-2/3 rounded bg-accent/10" style="height: calc(12px * var(--ui-scale))"></div>
 			</div>
 		</div>
 	{/each}

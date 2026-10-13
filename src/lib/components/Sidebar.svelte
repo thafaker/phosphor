@@ -47,7 +47,7 @@
 					></span>
 				{/if}
 			</span>
-			<span class="text-[11px] md:text-sm">{item.label}</span>
+			<span class="text-[calc(11px*var(--text-scale))] md:text-sm">{item.label}</span>
 		</a>
 	{/each}
 

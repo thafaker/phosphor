@@ -10,6 +10,14 @@
 :root {
 	color-scheme: dark;
 
+	/* Set by the appearance settings (and the inline script in app.html). Drives
+	 * the type scale and the explicitly-scaled UI (icons, avatars) only — layout
+	 * widths and spacings deliberately stay fixed. */
+	--text-scale: 1;
+
+	/* Icons/avatars are sized in px and opt in to scaling explicitly. */
+	--ui-scale: var(--text-scale);
+
 	--canvas: #07110b;
 	--surface: #0b1710;
 	--surface-2: #050b07;
@@ -84,16 +92,32 @@
 	--color-danger: var(--danger);
 
 	--shadow-glow: 0 0 60px var(--glow);
+
+	/* Type scale — the only thing the font-size control moves. Line-heights are
+	 * scaled alongside so large text doesn't end up cramped. */
+	--text-xs: calc(0.75rem * var(--text-scale));
+	--text-xs--line-height: calc(1rem * var(--text-scale));
+	--text-sm: calc(0.875rem * var(--text-scale));
+	--text-sm--line-height: calc(1.25rem * var(--text-scale));
+	--text-base: calc(1rem * var(--text-scale));
+	--text-base--line-height: calc(1.5rem * var(--text-scale));
+	--text-lg: calc(1.125rem * var(--text-scale));
+	--text-lg--line-height: calc(1.75rem * var(--text-scale));
+	--text-xl: calc(1.25rem * var(--text-scale));
+	--text-xl--line-height: calc(1.75rem * var(--text-scale));
+	--text-2xl: calc(1.5rem * var(--text-scale));
+	--text-2xl--line-height: calc(2rem * var(--text-scale));
+
+	/* Post body copy (was an arbitrary 0.95rem); named so it scales as well. */
+	--text-post: calc(0.95rem * var(--text-scale));
 }
 
 @layer base {
-	/* Scales every rem-based size — text, spacing and controls — relative to the
-	 * browser's own font-size, so a user's OS/browser preference is respected. */
-	html {
-		font-size: calc(100% * var(--text-scale, 1));
-	}
-
+	/* Only type scales with the accessibility setting; the layout frame stays put.
+	 * Elements without a `text-*` utility inherit this base size, which is why the
+	 * scaled size lives on `body` rather than on the root. */
 	body {
+		font-size: calc(1rem * var(--text-scale));
 		background-color: var(--canvas);
 		background-image: radial-gradient(80% 50% at 50% 0%, var(--glow), transparent 70%);
 		color: var(--ink);

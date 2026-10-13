@@ -8,10 +8,10 @@
 
 	let { src, alt, size = 44, class: className = '' }: Props = $props();
 
-	// Explicit width/height in rem so the avatar always stays a square (Tailwind's
-	// preflight sets `img { height: auto }`, which would otherwise break the crop)
-	// and scales together with the accessible text-size setting.
-	const box = $derived(`${size / 16}rem`);
+	// Explicit square size in px; `--ui-scale` follows the accessibility text size
+	// so the avatar grows with the copy. Inline CSS is required because Tailwind's
+	// preflight sets `img { height: auto }`, which would break the square crop.
+	const box = $derived(`calc(${size}px * var(--ui-scale))`);
 </script>
 
 <img

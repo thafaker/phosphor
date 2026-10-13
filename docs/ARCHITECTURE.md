@@ -134,10 +134,17 @@ Definiert werden sie in `src/routes/layout.css`:
   generierten Utilities die Live-Variablen und ein Theme-Wechsel wirkt zur Laufzeit.
 - `body`, Scrollbars, Auswahl und `.status-content` nutzen dieselben Variablen.
 
-**Schriftgröße.** Statt einzelne `font-size`-Werte zu ändern, setzt `layout.css`
-`html { font-size: calc(100% * var(--text-scale, 1)); }`. Da alle Tailwind-Größen in `rem`
-notiert sind, skaliert eine einzige Variable Text **und** Bedienelemente. `100 %` bezieht sich
-auf die Browser-/OS-Vorgabe, eine bereits vorhandene Nutzerpräferenz bleibt also erhalten.
+**Schriftgröße.** Nur die Typografie skaliert, nicht der Rahmen. Statt die Wurzel-Schriftgröße
+zu verändern, multiplizieren die Text-Tokens in `layout.css` (`--text-*` samt Line-Heights)
+ihren Wert mit `--text-scale`; `body { font-size: calc(1rem * var(--text-scale)) }` deckt
+vererbten Text ohne `text-*`-Utility ab. Weil `rem` dadurch weiter auf der Standard-Wurzel
+(16 px) steht, bleiben Breiten (`max-w-2xl` = 42 rem, `md:w-60` = 15 rem), Abstände und Bilder
+konstant — es wirkt wie „Große Schrift“ statt wie Zoom. Icons (`Icon.svelte`) und Avatare
+(`Avatar.svelte`) sind in px notiert und hängen sich explizit per
+`calc(… * var(--ui-scale))` an denselben Faktor, damit sie mit dem Text wachsen. Feste Höhen
+wurden auf `min-h-*` umgestellt, damit größere Schrift nicht abgeschnitten wird. Eingebaute
+`px`-Textgrößen (`text-[11px]`, `text-[10px]`) wurden auf `calc(… * var(--text-scale))`
+umgestellt.
 
 **Persistenz & kein Flackern.** `src/lib/stores/preferences.svelte.ts` hält die Wahl
 (`theme`, `textScale`, `motion`) und spiegelt sie nach `document.documentElement`

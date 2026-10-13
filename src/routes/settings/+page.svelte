@@ -92,7 +92,7 @@
 			onclick={() => preferences.decreaseText()}
 			disabled={!preferences.canDecrease}
 			aria-label="Schrift verkleinern"
-			class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-line font-semibold text-ink-strong transition hover:bg-accent/10 disabled:cursor-not-allowed disabled:opacity-40"
+			class="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-xl border border-line px-2 font-semibold text-ink-strong transition hover:bg-accent/10 disabled:cursor-not-allowed disabled:opacity-40"
 		>
 			A−
 		</button>
@@ -108,7 +108,7 @@
 			onclick={() => preferences.increaseText()}
 			disabled={!preferences.canIncrease}
 			aria-label="Schrift vergrößern"
-			class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-line font-semibold text-ink-strong transition hover:bg-accent/10 disabled:cursor-not-allowed disabled:opacity-40"
+			class="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-xl border border-line px-2 font-semibold text-ink-strong transition hover:bg-accent/10 disabled:cursor-not-allowed disabled:opacity-40"
 		>
 			A+
 		</button>

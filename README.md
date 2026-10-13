@@ -65,9 +65,11 @@ nach der Autorisierung zu dieser Origin zurückfinden.
 
 - **Farbschema:** Hell, Dunkel oder System (folgt `prefers-color-scheme`). Umschaltbar unter
   _Einstellungen_; die Wahl wird gespeichert und vor dem ersten Rendern angewendet.
-- **Schriftgröße:** 100 % – 200 % in sechs Stufen. Statt einzelne Textstellen zu skalieren wird
-  die Wurzel-Schriftgröße relativ zur Browser-Einstellung multipliziert, sodass auch die
-  Bedienelemente mitwachsen und eine vorhandene Nutzerpräferenz respektiert bleibt.
+- **Schriftgröße:** 100 % – 200 % in sechs Stufen. Es skaliert **nur die Typografie** —
+  Layout-Breiten, Abstände und Bilder bleiben fest im Rahmen, es wirkt also wie „Große
+  Schrift“ und nicht wie Zoom. Icons und Avatare folgen über dieselbe Variable
+  (`--ui-scale`), damit sie nicht winzig wirken. Für echtes Seiten-Zoom bleibt zusätzlich der
+  Browser-Zoom verfügbar.
 - **Bewegung:** Respektiert `prefers-reduced-motion` des Systems; in den Einstellungen lässt
   sich „reduziert“ zusätzlich erzwingen. Animationen werden dann auf nahezu null Dauer gesetzt,
   nicht entfernt — Zustandswechsel bleiben sichtbar.

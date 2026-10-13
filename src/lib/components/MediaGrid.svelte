@@ -36,7 +36,7 @@
 						/>
 						{#if attachment.description}
 							<span
-								class="absolute bottom-1.5 left-1.5 rounded bg-scrim px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-ink"
+								class="absolute bottom-1.5 left-1.5 rounded bg-scrim px-1.5 py-0.5 text-[calc(10px*var(--text-scale))] font-semibold tracking-wide text-ink"
 							>
 								ALT
 							</span>
