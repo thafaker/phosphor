@@ -5,6 +5,8 @@ Ein schlankes, schnelles Web-Frontend für [GoToSocial](https://gotosocial.org) 
 > GoToSocial ist ein API-only Server und bringt keine eigene Weboberfläche mit.
 > Phosphor ist ein Mastodon-kompatibler Client, der direkt gegen die API deiner Instanz spricht.
 
+![](screenshot.png)
+
 ## Status
 
 Frühes MVP, aktuell fest auf eine einzige Instanz verdrahtet (`src/lib/config.ts`).
