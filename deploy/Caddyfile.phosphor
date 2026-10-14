@@ -20,13 +20,20 @@ phosphor.janmontag.de {
 		Referrer-Policy "strict-origin-when-cross-origin"
 	}
 
-	# Standard: revalidieren (Deploys werden sofort sichtbar).
-	header Cache-Control "no-cache"
-
-	# Gehashte Bundles dürfen dauerhaft gecacht werden (Reihenfolge zählt:
-	# der spätere, spezifischere header-Block überschreibt den allgemeinen).
-	@immutable path /_app/immutable/*
+	# Gehashte Bundles dürfen dauerhaft gecacht werden. Die Matcher sind bewusst
+	# gegenseitig ausschließend (`not`), damit die Reihenfolge keine Rolle spielt.
+	# `path_regexp` statt Glob, weil ein Glob-`*` keine Pfadsegmente über `/` hinweg
+	# erfasst und die Bundles in Unterordnern liegen.
+	@immutable path_regexp ^/_app/immutable/
 	header @immutable Cache-Control "public, max-age=31536000, immutable"
+
+	# Alles andere revalidieren, damit ein Deploy sofort sichtbar wird.
+	@mutable not path_regexp ^/_app/immutable/
+	header @mutable Cache-Control "no-cache"
+
+	# Caddy 2.6 kennt die Endung .webmanifest nicht und liefert keinen Typ.
+	@manifest path /manifest.webmanifest
+	header @manifest Content-Type "application/manifest+json"
 
 	# SPA-Fallback: unbekannte Pfade (/settings, /status/…, /callback) an die
 	# Client-Router-Index ausliefern, sonst gibt es 404.
