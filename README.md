@@ -20,6 +20,7 @@ Bereits dabei:
 - Benachrichtigungen
 - Erscheinungsbild: Hell / Dunkel / System
 - Barrierefreie Schriftgröße (100 % – 200 %), wirkt auf die ganze App
+- Installierbar als App (PWA-Manifest + Icons) für den Home-Bildschirm
 
 ## Stack
 
@@ -54,9 +55,18 @@ Dann <http://localhost:5173> öffnen und auf „Anmelden“ klicken.
 
 ## Deployment
 
-`pnpm build` erzeugt eine rein statische SPA in `build/`. Die kann auf jedem Static-Host
-(Netlify, Vercel, Cloudflare Pages, nginx, …) liegen — solange unbekannte Pfade auf
+`pnpm build` erzeugt eine rein statische SPA in `build/`, die auf jedem Static-Host
+(nginx, Caddy, Netlify, Cloudflare Pages, …) liegt — solange unbekannte Pfade auf
 `index.html` zurückfallen (SPA-Fallback).
+
+Produktiv läuft Phosphor auf einem Raspberry Pi hinter Caddy unter
+<https://phosphor.janmontag.de>. Deployen mit:
+
+```bash
+./scripts/deploy.sh
+```
+
+Details, Caddy-Block und Fehlersuche: [`docs/DEPLOY.md`](docs/DEPLOY.md).
 
 Die `redirect_uri` beim Login ist `window.location.origin + /callback`. Der Browser muss also
 nach der Autorisierung zu dieser Origin zurückfinden.
@@ -82,7 +92,8 @@ nach der Autorisierung zu dieser Origin zurückfinden.
 - Rate-Limits (HTTP 429) und Throttling (503) kommen regelmäßig vor; der Client wiederholt
   idempotente Requests mit Backoff.
 
-Mehr Details in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+Mehr Details in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) und
+[`docs/DEPLOY.md`](docs/DEPLOY.md).
 
 ## Lizenz
 

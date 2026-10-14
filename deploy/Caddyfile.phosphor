@@ -1,0 +1,40 @@
+# Phosphor — statisches SPA-Deployment hinter Caddy.
+#
+# Diesen Block in /etc/caddy/Caddyfile einfügen (die Instanz nutzt eine einzige,
+# zentrale Caddyfile ohne `import`). Danach: `sudo caddy validate --config
+# /etc/caddy/Caddyfile && sudo systemctl reload caddy`.
+#
+# Bewusst OHNE basicauth: Phosphor ist ein reiner OAuth-Client, der Login läuft
+# gegen social.janmontag.de. Ein Basic-Auth-Prompt würde den OAuth-Rücksprung
+# auf /callback und das „Zum Home-Bildschirm"-Verhalten stören.
+
+phosphor.janmontag.de {
+	encode zstd gzip
+
+	root * /var/www/phosphor
+
+	header {
+		Strict-Transport-Security "max-age=31536000;"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "SAMEORIGIN"
+		Referrer-Policy "strict-origin-when-cross-origin"
+	}
+
+	# Standard: revalidieren (Deploys werden sofort sichtbar).
+	header Cache-Control "no-cache"
+
+	# Gehashte Bundles dürfen dauerhaft gecacht werden (Reihenfolge zählt:
+	# der spätere, spezifischere header-Block überschreibt den allgemeinen).
+	@immutable path /_app/immutable/*
+	header @immutable Cache-Control "public, max-age=31536000, immutable"
+
+	# SPA-Fallback: unbekannte Pfade (/settings, /status/…, /callback) an die
+	# Client-Router-Index ausliefern, sonst gibt es 404.
+	try_files {path} /index.html
+	file_server
+
+	log {
+		output file /var/log/caddy/phosphor.janmontag_de.log
+		format json
+	}
+}
