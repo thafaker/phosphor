@@ -61,8 +61,11 @@
 		status.reblogs_count += next ? 1 : -1;
 		try {
 			const updated = next ? await reblog(status.id) : await unreblog(status.id);
-			status.reblogged = updated.reblogged;
-			status.reblogs_count = updated.reblogs_count;
+			// GtS answers the reblog call with the boost *wrapper*: it carries no
+			// reblogs_count of its own (always 0), so read from the boosted status.
+			const result = updated.reblog ?? updated;
+			status.reblogged = result.reblogged;
+			status.reblogs_count = result.reblogs_count;
 		} catch {
 			status.reblogged = !next;
 			status.reblogs_count += next ? -1 : 1;
