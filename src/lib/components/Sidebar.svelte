@@ -37,7 +37,6 @@
 			href={item.href}
 			class="relative flex min-w-0 flex-1 flex-col items-center gap-0.5 rounded-lg px-2 py-1.5 text-ink-soft transition hover:bg-accent/10 hover:text-ink-strong md:flex-none md:flex-row md:gap-3 md:px-3 md:py-2.5 md:text-base"
 			class:text-accent={isActive(item.href)}
-			onclick={() => notificationsFeed.markAllRead()}
 		>
 			<span class="relative">
 				<Icon name={item.icon} size={22} />

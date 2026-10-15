@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import Avatar from '#lib/components/Avatar.svelte';
 	import Icon from '#lib/components/Icon.svelte';
 	import StatusCard from '#lib/components/StatusCard.svelte';
@@ -24,12 +23,14 @@
 
 	let sentinel: HTMLDivElement | undefined = $state();
 
-	onMount(() => {
-		notificationsFeed.markAllRead();
-	});
-
 	$effect(() => {
 		void notificationsFeed.load();
+	});
+
+	// Clear the unread dot while this page is open, including notifications
+	// that arrive over the stream while we are already looking at them.
+	$effect(() => {
+		if (notificationsFeed.items.length) notificationsFeed.markAllRead();
 	});
 
 	$effect(() => {

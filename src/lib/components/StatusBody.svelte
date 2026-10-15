@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
 	import {
 		bookmark,
 		favourite,
@@ -93,9 +94,26 @@
 		if (!status.poll?.votes_count || count === null) return 0;
 		return Math.round((count / status.poll.votes_count) * 100);
 	}
+
+	/**
+	 * Clicking anywhere on a card (that is not an interactive control or a
+	 * text selection) opens the thread view, so replies become reachable.
+	 * Keyboard users already have the timestamp/reply links inside the card.
+	 */
+	function openThread(event: MouseEvent) {
+		if (detail) return;
+		if (event.defaultPrevented || event.button !== 0) return;
+		if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+		const target = event.target as HTMLElement | null;
+		if (target?.closest('a, button, input, select, textarea, label, [data-no-open]')) return;
+		if (window.getSelection()?.toString()) return;
+		void goto(`/status/${status.id}`);
+	}
 </script>
 
-<article class="flex gap-3 px-4 py-3">
+<!-- svelte-ignore a11y_click_events_have_key_events -->
+<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+<article class="flex gap-3 px-4 py-3" class:cursor-pointer={!detail} onclick={openThread}>
 	<a href={status.account.url} target="_blank" rel="noopener noreferrer" class="shrink-0">
 		<Avatar src={status.account.avatar_static} alt={name} size={detail ? 52 : 44} />
 	</a>
