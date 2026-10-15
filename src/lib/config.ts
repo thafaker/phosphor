@@ -14,7 +14,7 @@ export const APP_NAME = 'Phosphor';
 export const APP_WEBSITE = 'https://github.com/thafaker/phosphor';
 
 /** OAuth scopes requested at login. */
-export const SCOPES = 'read write follow';
+export const SCOPES = 'read write follow push';
 
 /** Path the OAuth provider redirects back to. */
 export const REDIRECT_PATH = '/callback';

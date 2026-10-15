@@ -151,6 +151,8 @@ export interface Context {
 
 export interface InstanceConfiguration {
 	statuses?: { max_characters?: number };
+	/** Web Push / VAPID config, exposed via the v2 instance endpoint. */
+	vapid?: { public_key?: string };
 }
 
 export interface InstanceV2 {

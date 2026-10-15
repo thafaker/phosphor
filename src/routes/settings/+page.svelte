@@ -1,5 +1,8 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import Icon from '#lib/components/Icon.svelte';
+	import { session } from '#lib/auth/session.svelte.ts';
+	import { pushStore } from '#lib/push/push.svelte.ts';
 	import {
 		preferences,
 		TEXT_SCALES,
@@ -20,11 +23,80 @@
 
 	const percent = $derived(Math.round(preferences.textScale * 100));
 	const scaleIndex = $derived((TEXT_SCALES as readonly number[]).indexOf(preferences.textScale));
+
+	onMount(() => {
+		pushStore.init();
+		void pushStore.refresh();
+	});
+
+	function togglePush(): void {
+		if (pushStore.enabled) void pushStore.disable();
+		else void pushStore.enable();
+	}
 </script>
 
 <header class="sticky top-0 z-20 border-b border-line bg-canvas/85 px-4 py-3 backdrop-blur">
 	<h1 class="text-lg font-semibold tracking-tight text-ink-strong">Einstellungen</h1>
 </header>
+
+<section class="border-b border-line px-4 py-5">
+	<h2 class="text-sm font-semibold text-ink-strong">Benachrichtigungen</h2>
+	<p class="mt-1 text-sm text-ink-soft">
+		Erhalte Meldungen (Erwähnungen, Favoriten, Boosts, neue Follower) auch dann, wenn Phosphor
+		geschlossen ist.
+	</p>
+
+	{#if !pushStore.supported}
+		<p class="mt-4 rounded-xl border border-line bg-surface-2 p-3 text-sm text-ink-soft">
+			Dieser Browser unterstützt kein Web-Push. Auf dem iPhone funktioniert das nur in der zum
+			Home-Bildschirm hinzugefügten App (iOS 16.4 oder neuer).
+		</p>
+	{:else}
+		<div class="mt-4 flex items-center justify-between gap-3">
+			<div class="min-w-0">
+				<p class="text-sm font-medium text-ink-strong">
+					{pushStore.enabled ? 'Aktiviert' : 'Deaktiviert'}
+				</p>
+				<p class="text-xs text-ink-faint">
+					{pushStore.enabled
+						? 'Du bekommst Push-Meldungen dieser Instanz.'
+						: 'Es werden keine Push-Meldungen gesendet.'}
+				</p>
+			</div>
+			<button
+				type="button"
+				disabled={pushStore.busy}
+				onclick={togglePush}
+				aria-pressed={pushStore.enabled}
+				class="shrink-0 rounded-xl border px-4 py-2.5 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50 {pushStore.enabled
+					? 'border-line text-ink-soft hover:bg-accent/10'
+					: 'border-accent/40 bg-accent/10 text-accent hover:bg-accent/20'}"
+			>
+				{pushStore.busy ? '…' : pushStore.enabled ? 'Deaktivieren' : 'Aktivieren'}
+			</button>
+		</div>
+
+		{#if pushStore.error}
+			<div class="mt-3 rounded-xl border border-warn/40 bg-warn/10 p-3">
+				<p class="text-sm text-warn">{pushStore.error}</p>
+				{#if pushStore.needsRelogin}
+					<button
+						type="button"
+						onclick={() => session.logout()}
+						class="mt-2 rounded-lg border border-warn/40 px-3 py-1.5 text-xs font-medium text-warn transition hover:bg-warn/10"
+					>
+						Neu einloggen
+					</button>
+				{/if}
+			</div>
+		{/if}
+
+		<p class="mt-3 text-xs text-ink-faint">
+			Auf dem iPhone nur in der installierten App verfügbar (iOS 16.4+). Die Erlaubnis fragt iOS
+			beim Aktivieren ab.
+		</p>
+	{/if}
+</section>
 
 <section class="border-b border-line px-4 py-5">
 	<h2 class="text-sm font-semibold text-ink-strong">Erscheinungsbild</h2>

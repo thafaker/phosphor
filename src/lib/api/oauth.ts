@@ -4,6 +4,8 @@ import type { TokenResponse } from './types';
 export interface RegisteredApp {
 	client_id: string;
 	client_secret: string;
+	/** Scopes the app was registered with; used to detect when they change. */
+	scopes?: string;
 }
 
 /** The URL GoToSocial sends the user back to after granting access. */
@@ -25,7 +27,7 @@ export async function registerApp(): Promise<RegisteredApp> {
 	});
 	if (!res.ok) throw new Error(`App-Registrierung fehlgeschlagen (HTTP ${res.status})`);
 	const data = (await res.json()) as RegisteredApp;
-	return { client_id: data.client_id, client_secret: data.client_secret };
+	return { client_id: data.client_id, client_secret: data.client_secret, scopes: SCOPES };
 }
 
 /** Build the authorization URL the browser is sent to. */

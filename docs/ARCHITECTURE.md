@@ -65,6 +65,35 @@ wss://<instanz>/api/v1/streaming?access_token=<token>&stream=user
   - `delete` → Beitrag entfernen
   - `notification` → neue Meldung + Unread-Punkt
 
+## Push-Benachrichtigungen
+
+GoToSocial 0.22 bringt **Web Push** von Haus aus mit: Es erzeugt sein eigenes
+VAPID-Schlüsselpaar (in der eigenen DB, keine Server-Konfiguration nötig) und stellt
+den öffentlichen Schlüssel über `GET /api/v2/instance` → `configuration.vapid.public_key`
+bereit. Die Mastodon-kompatiblen Endpunkte `/api/v1/push/subscription` (GET/POST/PUT/DELETE)
+sind vorhanden.
+
+Phosphor nutzt das direkt — ohne eigenen Relay:
+
+1. `static/sw.js` wird als Service Worker registriert. Er **cached nichts** (kein Offline),
+   sondern behandelt nur `push` (iOS/Safari: `registration.showNotification(...)`) und
+   `notificationclick` (App fokussieren bzw. öffnen).
+2. `src/lib/push/push.svelte.ts` holt den VAPID-Public-Key, ruft
+   `pushManager.subscribe({ userVisibleOnly: true, applicationServerKey })` auf und spiegelt
+   das Abo per `POST /api/v1/push/subscription` an die Instanz (Alerts + `policy: all`).
+3. Der Schalter unter **Einstellungen → Benachrichtigungen** aktiviert/deaktiviert das Abo.
+
+Randbedingungen:
+
+- **Scope `push`** ist Teil von `SCOPES` in `src/lib/config.ts`. Ein vor dieser Änderung
+  erteiltes Token hat den Scope nicht; die App erkennt den 401/403 und bietet „Neu einloggen“
+  an. Beim erneuten Login registriert `session.svelte.ts` die App automatisch neu, wenn die
+  im `RegisteredApp` gespeicherten Scopes nicht mehr passen.
+- **iOS** unterstützt Web Push erst ab **16.4** und nur für zum Home-Bildschirm
+  hinzugefügte PWAs (`apple-mobile-web-app-capable` ist gesetzt).
+- Der Push-Payload ist GoToSocials `WebPushNotification` (`notification_id`, `title`, `body`,
+  `icon`, …). Der Worker baut daraus die Systembenachrichtigung.
+
 ## Verzeichnisstruktur
 
 ```
@@ -79,6 +108,8 @@ src/
       streaming.ts            # WebSocket-Wrapper mit Reconnect
     auth/
       session.svelte.ts       # Session-State (Token, Account, Login/Logout)
+    push/
+      push.svelte.ts          # Web-Push-Abo: SW registrieren, abonnieren, synchronisieren
     stores/
       streamer.svelte.ts      # zentrale Stream-Verteilung
       feed.svelte.ts          # TimelineFeed-Klasse; homeFeed & localFeed
@@ -102,9 +133,11 @@ src/
     callback/+page.svelte
     local/+page.svelte        # lokale Timeline
     notifications/+page.svelte
-    settings/+page.svelte     # Erscheinungsbild & Schriftgröße
+    settings/+page.svelte     # Erscheinungsbild, Schriftgröße & Push-Benachrichtigungen
     status/[id]/+page.svelte  # Thread (Vorfahren + Hauptstatus + Antworten)
 ```
+
+`static/sw.js` ist der (nicht cachende) Service Worker für Push.
 
 ## Datenfluss
 
@@ -184,7 +217,8 @@ Live-Vorschau. `'system'` lauscht auf `prefers-color-scheme` und folgt Änderung
 ## MVP-Stand
 
 ✅ Login, ✅ Start-/Lokale Timeline, ✅ Streaming, ✅ Composer, ✅ Favorit/Boost/Merken,
-✅ Thread, ✅ Benachrichtigungen, ✅ Hell/Dunkel/System, ✅ Schriftgröße, ✅ reduzierte Bewegung.
+✅ Thread (Klick auf Beitrag), ✅ Benachrichtigungen, ✅ Push, ✅ Hell/Dunkel/System,
+✅ Schriftgröße, ✅ reduzierte Bewegung.
 
 ## Nächste Schritte
 
@@ -193,7 +227,7 @@ Live-Vorschau. `'system'` lauscht auf `prefers-color-scheme` und folgt Änderung
 3. **Interaktionen im Thread**: Antworten inline, Kontext laden, Favoriten/Boosts live.
 4. **Meldungen filtern** (`types=`) und als gelesen markieren (`/notifications/clear`).
 5. **Bilder-Lightbox** und Video-Handling statt „neuer Tab“.
-6. **PWA/Offline**: Service Worker, Read-only-Cache der Timeline.
+6. **Offline-Cache** (der Service Worker existiert bereits für Push, cached aber bewusst nichts).
 7. **Barrierefreiheit** ausbauen und mit Screenreadern testen (Phanpys bekannte Schwäche).
 8. **i18n**: UI-Strings aus den Komponenten in Sprachdateien ziehen.
 9. **Multi-Instanz**: `INSTANCE_URL` von Konstante zu Session-State machen; Login mit

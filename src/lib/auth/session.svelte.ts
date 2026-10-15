@@ -3,7 +3,7 @@ import { setTokenGetter } from '#lib/api/client.ts';
 import { getInstanceLimit, verifyCredentials } from '#lib/api/gotosocial.ts';
 import { authorizeUrl, exchangeCode, registerApp, type RegisteredApp } from '#lib/api/oauth.ts';
 import type { Account } from '#lib/api/types.ts';
-import { DEFAULT_MAX_CHARS } from '#lib/config.ts';
+import { DEFAULT_MAX_CHARS, SCOPES } from '#lib/config.ts';
 
 const STORAGE_KEY = 'phosphor:session:v1';
 const APP_KEY = 'phosphor:oauth-app:v1';
@@ -89,7 +89,10 @@ class Session {
 	async beginLogin(): Promise<void> {
 		this.error = null;
 		try {
-			const app = this.app ?? loadApp() ?? (await registerApp());
+			// Re-register if the cached app predates the current scope set
+			// (e.g. an app created before we added the `push` scope).
+			const cached = this.app ?? loadApp();
+			const app = cached && cached.scopes === SCOPES ? cached : await registerApp();
 			this.app = app;
 			saveApp(app);
 			const state = crypto.randomUUID();
