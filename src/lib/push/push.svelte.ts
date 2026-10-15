@@ -136,9 +136,7 @@ class PushStore {
 						reblog: true,
 						poll: true,
 						update: true,
-						// Notifications for every post of every followed account
-						// would be far too noisy; leave that off.
-						status: false
+						status: true
 					},
 					policy: 'all'
 				}
