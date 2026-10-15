@@ -84,7 +84,7 @@
 {:else if session.loggedIn}
 	<div class="mx-auto flex min-h-dvh w-full max-w-6xl">
 		<Sidebar />
-		<main class="min-h-dvh w-full max-w-2xl flex-1 border-line pb-16 md:border-x md:pb-0">
+		<main class="min-h-dvh w-full max-w-2xl min-w-0 flex-1 border-line pb-16 md:border-x md:pb-0">
 			{@render children()}
 		</main>
 	</div>

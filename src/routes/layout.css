@@ -113,10 +113,19 @@
 }
 
 @layer base {
+	/* Safety net: as the type scale grows, no single row may ever widen the page.
+	 * `clip` (unlike `hidden`) does not create a scroll container, so the sticky
+	 * headers keep working. */
+	html,
+	body {
+		overflow-x: clip;
+	}
+
 	/* Only type scales with the accessibility setting; the layout frame stays put.
 	 * Elements without a `text-*` utility inherit this base size, which is why the
 	 * scaled size lives on `body` rather than on the root. */
 	body {
+		max-width: 100%;
 		font-size: calc(1rem * var(--text-scale));
 		background-color: var(--canvas);
 		background-image: radial-gradient(80% 50% at 50% 0%, var(--glow), transparent 70%);
@@ -163,6 +172,11 @@
 }
 
 /* Sanitised HTML coming from GoToSocial's `content` field. */
+.status-content {
+	/* Long unbroken strings (URLs, handles) must not push the layout wider. */
+	overflow-wrap: anywhere;
+}
+
 .status-content p {
 	margin-bottom: 0.75rem;
 }

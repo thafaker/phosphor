@@ -107,7 +107,7 @@
 				class="w-full resize-none bg-transparent text-post leading-relaxed text-ink-strong placeholder-ink-faint outline-none"
 			></textarea>
 
-			<div class="mt-2 flex items-center gap-2">
+			<div class="mt-2 flex flex-wrap items-center gap-2">
 				<button
 					type="button"
 					class="flex items-center gap-1 rounded-md px-2 py-1 text-xs hover:bg-accent/10 {cwEnabled

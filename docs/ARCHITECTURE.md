@@ -146,6 +146,15 @@ wurden auf `min-h-*` umgestellt, damit größere Schrift nicht abgeschnitten wir
 `px`-Textgrößen (`text-[11px]`, `text-[10px]`) wurden auf `calc(… * var(--text-scale))`
 umgestellt.
 
+**Kein horizontales Scrollen.** Weil nur die Glyphen wachsen, können enge Zeilen (untere
+Navigation, Composer-Aktionsleiste, Status-Fußzeile) breiter werden als der Bildschirm. Solche
+Zeilen sind deshalb umbruchfähig (`flex-wrap`) bzw. schrumpfbar (`min-w-0 flex-1`, Labels mit
+`truncate`) ausgelegt; lange Wörter im Beitragstext brechen per `overflow-wrap: anywhere`. Als
+Sicherheitsnetz verhindert `overflow-x: clip` auf `html`/`body` einen seitlichen Seiten-Scroll —
+`clip` erzeugt, anders als `hidden`, keinen Scroll-Container und bricht daher das
+`position: sticky` der Kopfzeilen nicht. Geprüft bis 200 % auf 320–1280 px Breite (kein
+`scrollWidth > viewport`).
+
 **Persistenz & kein Flackern.** `src/lib/stores/preferences.svelte.ts` hält die Wahl
 (`theme`, `textScale`, `motion`) und spiegelt sie nach `document.documentElement`
 (`data-theme`, `data-motion`, `--text-scale`) sowie in das `theme-color`-Meta. Gespeichert wird

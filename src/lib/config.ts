@@ -10,7 +10,7 @@ export const INSTANCE_URL = 'https://social.janmontag.de';
 /** Host without scheme, handy for display ("social.janmontag.de"). */
 export const INSTANCE_HOST = INSTANCE_URL.replace(/^https?:\/\//, '');
 
-export const APP_NAME = 'Phosphor';
+export const APP_NAME = 'JM-Phosphor';
 export const APP_WEBSITE = 'https://github.com/thafaker/phosphor';
 
 /** OAuth scopes requested at login. */

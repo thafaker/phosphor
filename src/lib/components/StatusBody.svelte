@@ -204,7 +204,7 @@
 			{/if}
 		{/if}
 
-		<footer class="mt-2.5 flex items-center gap-6 text-ink-soft">
+		<footer class="mt-2.5 flex flex-wrap items-center gap-x-6 gap-y-1.5 text-ink-soft">
 			<a
 				href={`/status/${status.id}`}
 				class="flex items-center gap-1.5 text-sm hover:text-ink-strong"
