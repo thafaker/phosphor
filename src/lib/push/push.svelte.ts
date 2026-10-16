@@ -40,15 +40,35 @@ class PushStore {
 			'Notification' in window;
 	}
 
-	/** Reconcile `enabled` with whatever subscription the browser already holds. */
+	/**
+	 * Reconcile local state with the browser subscription and, when one exists,
+	 * (re-)register it with GoToSocial.
+	 *
+	 * The re-registration is the important part. If the very first POST was
+	 * rejected (e.g. 403 "insufficient scope" on a token issued before the
+	 * `push` scope was added), the browser keeps its subscription anyway — so
+	 * without retrying, the server would never learn about it and no push could
+	 * ever be delivered. Re-sending is idempotent: the API replaces the
+	 * subscription for the current token.
+	 */
 	async refresh(): Promise<void> {
 		if (!this.supported) return;
 		try {
 			const registration = await navigator.serviceWorker.getRegistration('/');
 			const subscription = await registration?.pushManager.getSubscription();
-			this.enabled = !!subscription;
-		} catch {
+			if (!subscription) {
+				this.enabled = false;
+				return;
+			}
+			await this.saveSubscription(subscription);
+			this.enabled = true;
+			this.error = null;
+			this.needsRelogin = false;
+		} catch (err) {
 			this.enabled = false;
+			if (err instanceof ApiError && (err.status === 401 || err.status === 403)) {
+				this.needsRelogin = true;
+			}
 		}
 	}
 

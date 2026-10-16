@@ -12,6 +12,7 @@
 	import { homeFeed, localFeed } from '#lib/stores/feed.svelte.ts';
 	import { notificationsFeed } from '#lib/stores/notifications.svelte.ts';
 	import { preferences } from '#lib/stores/preferences.svelte.ts';
+	import { pushStore } from '#lib/push/push.svelte.ts';
 	import { streamer } from '#lib/stores/streamer.svelte.ts';
 
 	let { children }: LayoutProps = $props();
@@ -20,6 +21,7 @@
 
 	onMount(() => {
 		preferences.init();
+		pushStore.init();
 		void session.init();
 	});
 
@@ -101,6 +103,10 @@
 		if (token && session.loggedIn) {
 			streamer.connect(token);
 			void homeFeed.load();
+			// Re-register an existing browser push subscription with the server,
+			// so a token that only later gained the `push` scope still ends up
+			// with a working subscription (see PushStore.refresh).
+			void pushStore.refresh();
 		} else {
 			streamer.disconnect();
 			homeFeed.reset();
