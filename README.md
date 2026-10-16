@@ -20,6 +20,8 @@ Bereits dabei:
 - Favorisieren, Boosten, Merken
 - Thread-Ansicht mit Kontext
 - Benachrichtigungen
+- Push-Benachrichtigungen per Web Push — ohne externen Relay, inkl. neuer Beiträge
+  gefolgter Accounts (dort je Account über die „Glocke" aktivierbar)
 - Erscheinungsbild: Hell / Dunkel / System
 - Barrierefreie Schriftgröße (100 % – 200 %), wirkt auf die ganze App
 - Installierbar als App (PWA-Manifest + Icons) für den Home-Bildschirm
@@ -94,6 +96,12 @@ nach der Autorisierung zu dieser Origin zurückfinden.
 - GoToSocial backfillt keine alten Beiträge — Timelines wirken anfangs leer.
 - Rate-Limits (HTTP 429) und Throttling (503) kommen regelmäßig vor; der Client wiederholt
   idempotente Requests mit Backoff.
+- **Push bei neuen Beiträgen** verschickt GoToSocial nur an Follower, die für den Account die
+  Benachrichtigungen aktiviert haben (die „Glocke" bzw. das `notify`-Flag am Follow) — nicht an
+  alle gefolgten Accounts. Boosts und Antworten lösen keinen `status`-Push aus.
+- **Web Push** verlangt den Scope `push` im Token und auf iOS 16.4+ die zum Home-Bildschirm
+  hinzugefügte PWA. Fehlt der Scope, lehnt der Server das Abo mit **403** ab; die App bietet
+  dann „Neu einloggen" an und registriert das vorhandene Abo danach automatisch nach.
 
 Mehr Details in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) und
 [`docs/DEPLOY.md`](docs/DEPLOY.md).

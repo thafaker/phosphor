@@ -105,18 +105,29 @@ Phosphor nutzt das direkt — ohne eigenen Relay:
 2. `src/lib/push/push.svelte.ts` holt den VAPID-Public-Key, ruft
    `pushManager.subscribe({ userVisibleOnly: true, applicationServerKey })` auf und spiegelt
    das Abo per `POST /api/v1/push/subscription` an die Instanz (Alerts + `policy: all`).
-3. Der Schalter unter **Einstellungen → Benachrichtigungen** aktiviert/deaktiviert das Abo.
+3. `PushStore.refresh()` ist dabei **idempotent**: Hat der Browser bereits ein Abo, wird es
+   beim App-Start (bzw. nach dem Login, siehe `+layout.svelte`) erneut an den Server gemeldet.
+   Das heilt den Fall, dass der erste POST mit einem Token ohne `push`-Scope mit 403
+   `token has insufficient scope permission` abgelehnt wurde — der Browser behält sein Abo,
+   die App zeigte „Aktiviert", der Server wusste bislang aber nichts davon.
+4. Der Schalter unter **Einstellungen → Benachrichtigungen** aktiviert/deaktiviert das Abo.
 
 Randbedingungen:
 
 - **Scope `push`** ist Teil von `SCOPES` in `src/lib/config.ts`. Ein vor dieser Änderung
   erteiltes Token hat den Scope nicht; die App erkennt den 401/403 und bietet „Neu einloggen“
   an. Beim erneuten Login registriert `session.svelte.ts` die App automatisch neu, wenn die
-  im `RegisteredApp` gespeicherten Scopes nicht mehr passen.
+  im `RegisteredApp` gespeicherten Scopes nicht mehr passen — danach erledigt `refresh()`
+  das erneute Melde des bestehenden Abos (Schritt 3).
 - **iOS** unterstützt Web Push erst ab **16.4** und nur für zum Home-Bildschirm
   hinzugefügte PWAs (`apple-mobile-web-app-capable` ist gesetzt).
 - Der Push-Payload ist GoToSocials `WebPushNotification` (`notification_id`, `title`, `body`,
   `icon`, …). Der Worker baut daraus die Systembenachrichtigung.
+- **Neue Beiträge (`status`)** pusht GoToSocial nur an Follower mit gesetztem `notify`-Flag
+  am Follow des Autors (die „Glocke" im Profil). Der `status`-Alert im Abo aktiviert die
+  Möglichkeit — die Auswahl pro Account trifft weiterhin GoToSocial
+  (`internal/surfacing/surfacetimeline.go`: `if !follow.Flags.Notify() { continue }`).
+  Boosts und Antworten lösen keinen `status`-Push aus.
 
 ## Verzeichnisstruktur
 
