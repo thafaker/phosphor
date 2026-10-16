@@ -52,6 +52,7 @@ Dann <http://localhost:5173> öffnen und auf „Anmelden“ klicken.
 | `pnpm build`   | Production-Build nach `build/` |
 | `pnpm preview` | Build lokal ausliefern         |
 | `pnpm check`   | Typecheck (svelte-check)       |
+| `pnpm test`    | Unit-Tests (Vitest)            |
 | `pnpm lint`    | Prettier + ESLint              |
 | `pnpm format`  | Code formatieren               |
 

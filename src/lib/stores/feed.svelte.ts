@@ -3,7 +3,11 @@ import type { Status } from '#lib/api/types.ts';
 
 const PAGE_SIZE = 20;
 
-export type TimelineLoader = (params: { limit?: number; maxId?: string }) => Promise<Status[]>;
+export type TimelineLoader = (params: {
+	limit?: number;
+	maxId?: string;
+	sinceId?: string;
+}) => Promise<Status[]>;
 
 function dedupe(statuses: Status[]): Status[] {
 	const seen = new Set<string>();
@@ -22,6 +26,14 @@ export class TimelineFeed {
 	loading = $state(false);
 	loaded = $state(false);
 	error = $state<string | null>(null);
+
+	/** True while a background "pull newer" refresh is in flight. */
+	private refreshing = false;
+
+	/** Newest id we have seen, so `loadNew()` can ask only for the gap. */
+	private newestId(): string | undefined {
+		return this.items[0]?.id;
+	}
 
 	constructor(private readonly loader: TimelineLoader) {}
 
@@ -53,6 +65,30 @@ export class TimelineFeed {
 				err instanceof Error ? err.message : 'Ältere Beiträge konnten nicht geladen werden.';
 		} finally {
 			this.loading = false;
+		}
+	}
+
+	/**
+	 * Fetch everything newer than what we already have and prepend it, without
+	 * touching the rest of the list. Used when the app comes back to the
+	 * foreground: while it was suspended the WebSocket was dead and the stream
+	 * cannot replay missed events, so we pull the gap from the API.
+	 *
+	 * Unlike `load(true)` this never resets the list, so pagination and the
+	 * scroll position survive. Errors are swallowed on purpose — this is a
+	 * best-effort background refresh; the stream or the next resume will retry.
+	 */
+	async loadNew(): Promise<void> {
+		if (this.refreshing || !this.loaded) return;
+		this.refreshing = true;
+		try {
+			const sinceId = this.newestId();
+			const fresh = await this.loader({ limit: PAGE_SIZE, sinceId });
+			if (fresh.length) this.items = dedupe([...fresh, ...this.items]);
+		} catch {
+			// handled on the next resume / reconnect
+		} finally {
+			this.refreshing = false;
 		}
 	}
 

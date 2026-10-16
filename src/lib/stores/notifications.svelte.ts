@@ -1,7 +1,11 @@
-import { getNotifications } from '#lib/api/gotosocial.ts';
+import { getNotifications, type TimelineParams } from '#lib/api/gotosocial.ts';
 import type { Notification } from '#lib/api/types.ts';
 
 const PAGE_SIZE = 20;
+
+export type NotificationsLoader = (
+	params: TimelineParams & { types?: string[] }
+) => Promise<Notification[]>;
 
 function dedupe(notifications: Notification[]): Notification[] {
 	const seen = new Set<string>();
@@ -14,19 +18,24 @@ function dedupe(notifications: Notification[]): Notification[] {
 	return out;
 }
 
-class NotificationsFeed {
+export class NotificationsFeed {
 	items = $state<Notification[]>([]);
 	loading = $state(false);
 	loaded = $state(false);
 	unread = $state(0);
 	error = $state<string | null>(null);
 
+	/** True while a background "pull newer" refresh is in flight. */
+	private refreshing = false;
+
+	constructor(private readonly loader: NotificationsLoader) {}
+
 	async load(force = false): Promise<void> {
 		if (this.loading || (this.loaded && !force)) return;
 		this.loading = true;
 		this.error = null;
 		try {
-			this.items = dedupe(await getNotifications({ limit: PAGE_SIZE }));
+			this.items = dedupe(await this.loader({ limit: PAGE_SIZE }));
 			this.loaded = true;
 		} catch (err) {
 			this.error =
@@ -43,7 +52,7 @@ class NotificationsFeed {
 		this.loading = true;
 		this.error = null;
 		try {
-			const older = await getNotifications({ limit: PAGE_SIZE, maxId: oldest });
+			const older = await this.loader({ limit: PAGE_SIZE, maxId: oldest });
 			this.items = dedupe([...this.items, ...older]);
 		} catch (err) {
 			this.error =
@@ -62,6 +71,29 @@ class NotificationsFeed {
 		this.unread += 1;
 	}
 
+	/**
+	 * Pull anything newer than what we have (see `TimelineFeed.loadNew`). New
+	 * items also bump the unread counter, since they arrived while the stream
+	 * was down. Silent on failure.
+	 */
+	async loadNew(): Promise<void> {
+		if (this.refreshing || !this.loaded) return;
+		this.refreshing = true;
+		try {
+			const sinceId = this.items[0]?.id;
+			const fresh = await this.loader({ limit: PAGE_SIZE, sinceId });
+			if (fresh.length) {
+				const merged = dedupe([...fresh, ...this.items]);
+				this.unread += merged.length - this.items.length;
+				this.items = merged;
+			}
+		} catch {
+			// handled on the next resume / reconnect
+		} finally {
+			this.refreshing = false;
+		}
+	}
+
 	markAllRead(): void {
 		this.unread = 0;
 	}
@@ -74,4 +106,4 @@ class NotificationsFeed {
 	}
 }
 
-export const notificationsFeed = new NotificationsFeed();
+export const notificationsFeed = new NotificationsFeed((params) => getNotifications(params));

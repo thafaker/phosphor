@@ -18,13 +18,27 @@ class Streamer {
 		this.stream = stream;
 	}
 
+	/**
+	 * Make sure the stream is up, reconnecting straight away if it died while
+	 * the app was in the background. Safe to call repeatedly.
+	 *
+	 * @returns `true` if a fresh connection was started.
+	 */
+	ensureConnected(token: string): boolean {
+		if (!this.stream) {
+			this.connect(token);
+			return true;
+		}
+		return this.stream.ensureConnected();
+	}
+
 	disconnect(): void {
 		this.stream?.close();
 		this.stream = null;
 	}
 
 	get connected(): boolean {
-		return this.stream !== null;
+		return this.stream?.isOpen ?? false;
 	}
 
 	subscribe(listener: Listener): () => void {

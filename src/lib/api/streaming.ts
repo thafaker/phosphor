@@ -85,6 +85,46 @@ export class Stream {
 		this.reconnectTimer = setTimeout(() => this.connect(), delay);
 	}
 
+	/** Whether the socket is currently open and usable. */
+	get isOpen(): boolean {
+		return this.ws?.readyState === WebSocket.OPEN;
+	}
+
+	/**
+	 * Reconnect immediately if the socket is missing or no longer open.
+	 *
+	 * Mobile browsers freeze background pages: timers stop and the socket dies
+	 * without necessarily delivering a close event we can react to in time.
+	 * When the app is resumed we therefore drop any pending backoff and open a
+	 * fresh connection right away instead of waiting for the next timer tick.
+	 *
+	 * @returns `true` if a fresh connection was started.
+	 */
+	ensureConnected(): boolean {
+		if (this.stopped) return false;
+		const state = this.ws?.readyState;
+		if (state === WebSocket.OPEN || state === WebSocket.CONNECTING) return false;
+
+		if (this.reconnectTimer !== null) {
+			clearTimeout(this.reconnectTimer);
+			this.reconnectTimer = null;
+		}
+		if (this.ws) {
+			// Suppress the close handler so it can't schedule a second reconnect.
+			this.ws.onclose = null;
+			this.ws.onerror = null;
+			try {
+				this.ws.close();
+			} catch {
+				// already closing
+			}
+			this.ws = null;
+		}
+		this.attempt = 0;
+		this.connect();
+		return true;
+	}
+
 	close(): void {
 		this.stopped = true;
 		if (this.reconnectTimer !== null) {

@@ -34,6 +34,7 @@ export function publicTimeline(
 		query: {
 			limit: params.limit ?? 20,
 			max_id: params.maxId,
+			since_id: params.sinceId,
 			local: params.local,
 			remote: params.remote
 		}
@@ -99,7 +100,12 @@ export function getNotifications(
 	params: TimelineParams & { types?: string[] } = {}
 ): Promise<Notification[]> {
 	return apiRequest<Notification[]>('/api/v1/notifications', {
-		query: { limit: params.limit ?? 20, max_id: params.maxId, types: params.types?.join(',') }
+		query: {
+			limit: params.limit ?? 20,
+			max_id: params.maxId,
+			since_id: params.sinceId,
+			types: params.types?.join(',')
+		}
 	});
 }
 

@@ -27,7 +27,7 @@ und ein kleiner Angriffsvektor.
  POST /api/v1/apps            einmalig: client_id + client_secret holen
    │                          (redirect_uris = origin + /callback)
    ▼
- Redirect  →  GET /oauth/authorize?client_id=…&response_type=code&scope=read write follow&state=…
+ Redirect  →  GET /oauth/authorize?client_id=…&response_type=code&scope=read write follow push&state=…
    │
    │  Nutzer bestätigt auf der Instanz
    ▼
@@ -64,6 +64,30 @@ wss://<instanz>/api/v1/streaming?access_token=<token>&stream=user
   - `status.update` → bestehenden Beitrag ersetzen
   - `delete` → Beitrag entfernen
   - `notification` → neue Meldung + Unread-Punkt
+
+## Wiederaufnahme aus dem Hintergrund
+
+Auf dem Handy friert der Browser eine PWA ein, statt sie zu entladen: Timer stehen still,
+der WebSocket stirbt, und beim Zurückkehren läuft **nichts** von selbst wieder an. Ohne
+Gegenmaßnahme zeigt die App also den Stand von vor dem Einfrieren — nur ein vollständiger
+Neustart lädt frisch. Da der GtS-Stream verpasste Ereignisse nicht nachliefert, muss die
+Lücke aktiv nachgeladen werden.
+
+Umgesetzt im `+layout.svelte`:
+
+- Bei `visibilitychange` → sichtbar, `pageshow` (bfcache, `persisted`), `focus`, `online`
+  und dem Page-Lifecycle-`resume` (Chromium/Android) läuft ein `refresh()`.
+  Mehrere dieser Events können bei einer Wiederaufnahme gemeinsam feuern und werden über
+  einen 5-s-Debounce zu einer Aktualisierung zusammengefasst.
+- `refresh()` verbindet den Stream sofort neu (`streamer.ensureConnected` →
+  `Stream.ensureConnected`, das einen eventuell laufenden Backoff-Timer verwirft) und ruft
+  `pullNew()`.
+- **`pullNew()` lädt nur die Lücke nach** (`since_id` = neueste bekannte ID) und hängt sie
+  oben an, statt die Liste zu ersetzen (`TimelineFeed.loadNew` / `NotificationsFeed.loadNew`).
+  So bleiben Pagination und Scrollposition erhalten; ist die Seite heruntergescrollt, wird
+  die Viewport-Position über die Höhendifferenz gehalten, damit nichts springt.
+- Ein 60-s-Watchdog prüft zusätzlich, ob der Socket im Vordergrund gestorben ist, und lädt
+  nur dann nach, wenn er tatsächlich neu verbunden werden musste.
 
 ## Push-Benachrichtigungen
 

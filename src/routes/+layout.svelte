@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
-	import { onMount } from 'svelte';
+	import { onMount, tick } from 'svelte';
 	import './layout.css';
 	import favicon from '#lib/assets/favicon.svg';
 	import type { LayoutProps } from './$types';
@@ -22,6 +22,78 @@
 		preferences.init();
 		void session.init();
 	});
+
+	/**
+	 * When a mobile PWA is backgrounded the browser freezes the page: timers
+	 * stop and the WebSocket silently dies. Nothing re-runs on its own when it
+	 * comes back, so the app would keep showing whatever it had when it was
+	 * frozen (the reported bug). On every resume we reconnect the stream and
+	 * pull the posts and notifications that arrived in the meantime.
+	 */
+	onMount(() => {
+		let lastRefresh = 0;
+
+		function refresh(): void {
+			if (document.visibilityState !== 'visible') return;
+			// visibilitychange, focus, pageshow and online can all fire on a
+			// single resume — collapse them into one refresh.
+			const now = Date.now();
+			if (now - lastRefresh < 5000) return;
+			lastRefresh = now;
+
+			const token = session.token;
+			if (token && session.loggedIn) streamer.ensureConnected(token);
+			void pullNew();
+		}
+
+		const onVisibility = () => refresh();
+		const onPageShow = (event: PageTransitionEvent) => {
+			if (event.persisted) refresh();
+		};
+
+		// Safety net for a socket that dies while the app stays in the
+		// foreground: only when it actually had to be reopened do we pull the
+		// missed gap (a healthy connection makes this a no-op).
+		const watchdog = setInterval(() => {
+			if (document.visibilityState !== 'visible') return;
+			const token = session.token;
+			if (token && session.loggedIn && streamer.ensureConnected(token)) void pullNew();
+		}, 60_000);
+
+		document.addEventListener('visibilitychange', onVisibility);
+		window.addEventListener('focus', onVisibility);
+		window.addEventListener('online', onVisibility);
+		window.addEventListener('pageshow', onPageShow);
+		// Page Lifecycle API (Chromium, i.e. Android PWAs).
+		const doc = document as EventTarget;
+		doc.addEventListener('resume', onVisibility);
+
+		return () => {
+			clearInterval(watchdog);
+			document.removeEventListener('visibilitychange', onVisibility);
+			window.removeEventListener('focus', onVisibility);
+			window.removeEventListener('online', onVisibility);
+			window.removeEventListener('pageshow', onPageShow);
+			doc.removeEventListener('resume', onVisibility);
+		};
+	});
+
+	/**
+	 * Pull only the items newer than what we already show and insert them at the
+	 * top. When the user is scrolled down we keep the viewport anchored on the
+	 * same post, so a background refresh never yanks the page.
+	 */
+	async function pullNew(): Promise<void> {
+		const root = document.documentElement;
+		const beforeY = window.scrollY;
+		const beforeHeight = root.scrollHeight;
+
+		await Promise.all([homeFeed.loadNew(), localFeed.loadNew(), notificationsFeed.loadNew()]);
+		await tick();
+
+		const grew = root.scrollHeight - beforeHeight;
+		if (grew > 0 && beforeY > 0) window.scrollBy(0, grew);
+	}
 
 	// Keep the WebSocket and feeds in sync with the auth state.
 	$effect(() => {
