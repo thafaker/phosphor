@@ -21,9 +21,13 @@ ssh -p "${PORT}" "${HOST}" "mkdir -p '${TARGET}'"
 echo "→ Sync build/ → ${HOST}:${TARGET}"
 # -r l p t D z : rekursiv, Symlinks, rechte, zeiten, devices, komprimiert
 # --delete      : entfernt veraltete Dateien (alte gehashte Bundles)
-# --chmod       : Verzeichnisse 755, Dateien 644 -> für Caddy lesbar
-rsync -rlptDz --delete --chmod=D755,F644 \
+# Kein --chmod: macOS liefert openrsync, das die D/F-Syntax nicht kennt. Die
+# Rechte werden stattdessen nach dem Sync remote gesetzt (s. u.).
+rsync -rlptDz --delete \
 	-e "ssh -p ${PORT}" \
 	build/ "${HOST}:${TARGET}/"
+
+# Verzeichnisse 755, Dateien 644 -> für Caddy lesbar, unabhängig vom lokalen umask.
+ssh -p "${PORT}" "${HOST}" "chmod -R a+rX '${TARGET}'"
 
 echo "✓ Deployt. → https://phosphor.janmontag.de"
