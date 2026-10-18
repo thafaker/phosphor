@@ -7,6 +7,7 @@ import type {
 	InstanceV2,
 	Notification,
 	Status,
+	StatusSource,
 	Visibility
 } from './types';
 
@@ -92,6 +93,47 @@ export function postStatus(input: PostStatusInput): Promise<Status> {
 			in_reply_to_id: input.inReplyToId,
 			sensitive: input.sensitive,
 			language: input.language
+		}
+	});
+}
+
+/** Raw, unrendered text of a status — the only sane basis for an edit form. */
+export function getStatusSource(id: string): Promise<StatusSource> {
+	return apiRequest<StatusSource>(`/api/v1/statuses/${id}/source`);
+}
+
+export interface EditStatusInput {
+	/** Plain text (or Markdown) content, as returned by `getStatusSource`. */
+	status: string;
+	spoilerText?: string;
+	/** GtS' edit form has no optional `sensitive`: omitting it would clear the flag. */
+	sensitive?: boolean;
+	/** Omitting it makes GtS fall back to the account's default language. */
+	language?: string;
+	/**
+	 * GoToSocial replaces the status' attachments with whatever is sent here, so
+	 * the existing media ids must be passed along to keep them
+	 * (`internal/processing/status/edit.go`: `status.AttachmentIDs = form.MediaIDs`).
+	 */
+	mediaIds?: string[];
+	/** Likewise, an omitted poll is deleted; resend it to keep it alive. */
+	poll?: { options: string[]; multiple: boolean };
+}
+
+/**
+ * Edit an own status (`PUT /api/v1/statuses/:id`). GoToSocial does not allow
+ * changing the visibility through this endpoint. Returns the latest revision.
+ */
+export function editStatus(id: string, input: EditStatusInput): Promise<Status> {
+	return apiRequest<Status>(`/api/v1/statuses/${id}`, {
+		method: 'PUT',
+		body: {
+			status: input.status,
+			spoiler_text: input.spoilerText,
+			sensitive: input.sensitive,
+			language: input.language,
+			media_ids: input.mediaIds,
+			poll: input.poll
 		}
 	});
 }

@@ -149,12 +149,14 @@ src/
       streamer.svelte.ts      # zentrale Stream-Verteilung
       feed.svelte.ts          # TimelineFeed-Klasse; homeFeed & localFeed
       notifications.svelte.ts # Meldungen + Unread-Zähler
+      statusSync.ts           # bearbeiteten Status in alle Ansichten spiegeln
       preferences.svelte.ts   # Theme + Schriftgröße (persistiert)
     components/
       Icon.svelte             # eigene Inline-SVG-Icons (keine Icon-Dependency)
       Avatar.svelte
       MediaGrid.svelte        # Anhänge, Sensitive-Blur, ALT-Badge
       StatusBody.svelte       # eine Statusdarstellung (Inhalt, Aktionen, Umfrage, Card)
+      StatusEditor.svelte     # modaler Dialog zum Bearbeiten eigener Beiträge
       StatusCard.svelte       # Boost-Wrapper um StatusBody
       Composer.svelte         # Verfassen/Antworten
       Sidebar.svelte          # Navigation (Desktop-Sidebar, mobile Bottom-Bar)
@@ -185,6 +187,30 @@ session.token ──▶ api/client (Bearer) ◀───────────
 
 Aktionen (Favorit, Boost, Merken) werden optimistisch im Store-Objekt gesetzt und bei einem
 API-Fehler zurückgerollt. Da die Stores `$state` verwenden, greifen die Änderungen direkt in der UI.
+
+## Beiträge bearbeiten
+
+Eigene Beiträge lassen sich über `PUT /api/v1/statuses/:id` bearbeiten (`editStatus` in
+`api/gotosocial.ts`). Geöffnet wird der modale `<dialog>` (`components/StatusEditor.svelte`)
+über „Bearbeiten“ im Kopf eigener Beiträge (`StatusBody.svelte`).
+
+Drei Eigenheiten der GtS-API bestimmen die Umsetzung:
+
+- **Rohtext statt HTML.** Der Dialog lädt den ungerenderten Text über
+  `GET /api/v1/statuses/:id/source` (`getStatusSource`), weil `content` bereits gerendertes
+  HTML ist.
+- **Fehlende Felder löschen.** GtS ersetzt den Zustand durch das Gesendete: `media_ids` werden
+  1:1 übernommen (`status.AttachmentIDs = form.MediaIDs`), ein fehlender Poll wird gelöscht,
+  `sensitive` ist kein Zeiger und `language` fällt auf die Kontoeinstellung zurück. Der Dialog
+  sendet deshalb die vorhandenen Anhang-IDs, den vorhandenen Poll (Optionen + `multiple`) und
+  die aktuelle Sprache mit. Den Schalter „Zähler verbergen“ (`hide_counts`) gibt die API nicht
+  heraus; er kann beim Bearbeiten einer Umfrage verloren gehen, die Stimmen bleiben erhalten.
+- **Kein Sichtbarkeitswechsel.** GtS' Edit-Formular kennt kein `visibility`; die Sichtbarkeit
+  bleibt unverändert.
+
+Nach dem Speichern wird das Status-Objekt direkt mutiert (damit die Thread-Ansicht mitzieht) und
+über `stores/statusSync.ts` (`applyStatusUpdate`) in beide Timelines und die Benachrichtigungen
+gespiegelt — dieselbe Funktion verarbeitet auch das `status.update`-Stream-Ereignis.
 
 ## Erscheinungsbild & Barrierefreiheit
 
@@ -253,7 +279,7 @@ Live-Vorschau. `'system'` lauscht auf `prefers-color-scheme` und folgt Änderung
 
 ✅ Login, ✅ Start-/Lokale Timeline, ✅ Streaming, ✅ Composer, ✅ Favorit/Boost/Merken,
 ✅ Thread (Klick auf Beitrag), ✅ Benachrichtigungen, ✅ Push, ✅ Hell/Dunkel/System,
-✅ Schriftgröße, ✅ reduzierte Bewegung.
+✅ Schriftgröße, ✅ reduzierte Bewegung, ✅ Bearbeiten eigener Beiträge.
 
 ## Nächste Schritte
 

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { Notification } from '#lib/api/types.ts';
+import type { Notification, Status } from '#lib/api/types.ts';
 import { NotificationsFeed } from './notifications.svelte.ts';
 
 function notification(id: string): Notification {
@@ -35,5 +35,28 @@ describe('NotificationsFeed.loadNew', () => {
 
 		expect(feed.items.map((n) => n.id)).toEqual(['2', '1']);
 		expect(feed.unread).toBe(0);
+	});
+});
+
+describe('NotificationsFeed.replaceStatus', () => {
+	it('swaps in the edited status wherever it appears, and only there', () => {
+		const feed = new NotificationsFeed(vi.fn());
+		const withStatus = {
+			id: 'n1',
+			status: { id: 's1', content: '<p>alt</p>' }
+		} as unknown as Notification;
+		const withoutStatus = { id: 'n2', account: { id: 'a1' } } as unknown as Notification;
+		const other = {
+			id: 'n3',
+			status: { id: 's2', content: '<p>fremd</p>' }
+		} as unknown as Notification;
+		feed.items = [withStatus, withoutStatus, other];
+
+		feed.replaceStatus({ id: 's1', content: '<p>neu</p>' } as Status);
+
+		expect(feed.items[0]).not.toBe(withStatus);
+		expect(feed.items[0].status?.content).toBe('<p>neu</p>');
+		expect(feed.items[1].status).toBeUndefined();
+		expect(feed.items[2].status?.content).toBe('<p>fremd</p>');
 	});
 });

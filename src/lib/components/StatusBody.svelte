@@ -9,12 +9,15 @@
 		unreblog
 	} from '#lib/api/gotosocial.ts';
 	import type { Status } from '#lib/api/types.ts';
+	import { session } from '#lib/auth/session.svelte.ts';
+	import { applyStatusUpdate } from '#lib/stores/statusSync.ts';
 	import { formatCount } from '#lib/utils/format.ts';
 	import { emojify, withExternalLinks } from '#lib/utils/text.ts';
 	import { absoluteTime, relativeTime } from '#lib/utils/time.ts';
 	import Avatar from './Avatar.svelte';
 	import Icon from './Icon.svelte';
 	import MediaGrid from './MediaGrid.svelte';
+	import StatusEditor from './StatusEditor.svelte';
 
 	interface Props {
 		status: Status;
@@ -28,6 +31,10 @@
 	// svelte-ignore state_referenced_locally
 	let showContent = $state(!status.spoiler_text);
 	let busy = $state(false);
+	let editing = $state(false);
+
+	/** Only the author may edit a post (GtS enforces it too). */
+	const isOwn = $derived(session.account?.id === status.account.id);
 
 	const name = $derived(status.account.display_name || status.account.username);
 	const nameHtml = $derived(emojify(name, status.account.emojis));
@@ -109,6 +116,22 @@
 		if (window.getSelection()?.toString()) return;
 		void goto(`/status/${status.id}`);
 	}
+
+	/**
+	 * Reflect a successful edit. Mutating the status in place updates the thread
+	 * view (which holds its own copy), while `applyStatusUpdate` patches the
+	 * timelines and notifications that show the same post.
+	 */
+	function onEdited(updated: Status): void {
+		status.content = updated.content;
+		status.spoiler_text = updated.spoiler_text;
+		status.sensitive = updated.sensitive;
+		status.edited_at = updated.edited_at;
+		status.language = updated.language;
+		status.poll = updated.poll;
+		status.media_attachments = updated.media_attachments;
+		applyStatusUpdate(updated);
+	}
 </script>
 
 <!-- svelte-ignore a11y_click_events_have_key_events -->
@@ -140,6 +163,17 @@
 			<Icon name={visibilityIcon} size={13} class="text-ink-faint" />
 			{#if status.edited_at}
 				<span class="text-ink-faint">· bearbeitet</span>
+			{/if}
+			{#if isOwn}
+				<button
+					type="button"
+					title="Beitrag bearbeiten"
+					class="ml-auto flex items-center gap-1 rounded-md px-1.5 py-0.5 text-xs text-ink-faint hover:bg-accent/10 hover:text-ink-strong"
+					onclick={() => (editing = true)}
+				>
+					<Icon name="pencil" size={14} />
+					Bearbeiten
+				</button>
 			{/if}
 		</header>
 
@@ -265,4 +299,8 @@
 			</button>
 		</footer>
 	</div>
+
+	{#if editing}
+		<StatusEditor {status} onClose={() => (editing = false)} onSaved={onEdited} />
+	{/if}
 </article>

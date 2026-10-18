@@ -1,5 +1,5 @@
 import { getNotifications, type TimelineParams } from '#lib/api/gotosocial.ts';
-import type { Notification } from '#lib/api/types.ts';
+import type { Notification, Status } from '#lib/api/types.ts';
 
 const PAGE_SIZE = 20;
 
@@ -69,6 +69,13 @@ export class NotificationsFeed {
 		if (this.items.some((item) => item.id === notification.id)) return;
 		this.items = [notification, ...this.items];
 		this.unread += 1;
+	}
+
+	/** Swap in a freshly loaded copy of the status embedded in any notification. */
+	replaceStatus(status: Status): void {
+		this.items = this.items.map((item) =>
+			item.status?.id === status.id ? { ...item, status } : item
+		);
 	}
 
 	/**

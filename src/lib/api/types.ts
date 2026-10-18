@@ -149,6 +149,17 @@ export interface Context {
 	descendants: Status[];
 }
 
+/**
+ * The plain-text source of a status as it was submitted (`/statuses/:id/source`).
+ * Needed to edit a post: `Status.content` is rendered HTML.
+ */
+export interface StatusSource {
+	id: string;
+	text: string;
+	spoiler_text: string;
+	content_type?: string;
+}
+
 export interface InstanceConfiguration {
 	statuses?: { max_characters?: number };
 	/** Web Push / VAPID config, exposed via the v2 instance endpoint. */
