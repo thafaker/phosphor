@@ -24,3 +24,8 @@ export const HOME_PATH = '/';
 
 /** Fallback character limit if the instance doesn't report one. */
 export const DEFAULT_MAX_CHARS = 5000;
+
+/** Fallbacks for the media upload limits (used until/unless the instance reports its own). */
+export const DEFAULT_MAX_MEDIA_ATTACHMENTS = 4;
+export const DEFAULT_MEDIA_SIZE_LIMIT = 10 * 1024 * 1024;
+export const DEFAULT_MEDIA_DESCRIPTION_LIMIT = 1500;

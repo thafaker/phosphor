@@ -1,10 +1,18 @@
 <script lang="ts">
-	import { postStatus } from '#lib/api/gotosocial.ts';
+	import { onDestroy } from 'svelte';
+	import { postStatus, uploadMedia } from '#lib/api/gotosocial.ts';
 	import type { Status, Visibility } from '#lib/api/types.ts';
 	import { session } from '#lib/auth/session.svelte.ts';
+	import {
+		createMediaDraft,
+		revokeMediaDraft,
+		validateMediaFile,
+		type MediaDraft
+	} from '#lib/utils/media.ts';
 	import { emojify } from '#lib/utils/text.ts';
 	import Avatar from './Avatar.svelte';
 	import Icon from './Icon.svelte';
+	import MediaPicker from './MediaPicker.svelte';
 
 	interface Props {
 		inReplyTo?: Status | null;
@@ -26,12 +34,25 @@
 	// Default to the visibility of the status we're replying to (initial value only).
 	// svelte-ignore state_referenced_locally
 	let visibility = $state<Visibility>(inReplyTo?.visibility ?? 'public');
+	let sensitive = $state(false);
+	let drafts = $state<MediaDraft[]>([]);
 	let submitting = $state(false);
 	let error = $state<string | null>(null);
 
 	const remaining = $derived(session.maxChars - text.length);
+	const uploading = $derived(drafts.some((draft) => draft.uploading));
 	const canSubmit = $derived(
-		text.trim().length > 0 && remaining >= 0 && !submitting && !(cwEnabled && !spoilerText.trim())
+		(text.trim().length > 0 || drafts.length > 0) &&
+			remaining >= 0 &&
+			!submitting &&
+			!(cwEnabled && !spoilerText.trim())
+	);
+	// Prefer the types the instance actually accepts; fall back to broad globs
+	// so the picker is still usable if the instance doesn't advertise them.
+	const accept = $derived(
+		session.limits.supportedMediaTypes.length
+			? session.limits.supportedMediaTypes.join(',')
+			: 'image/*,video/*,audio/*'
 	);
 
 	const replyName = $derived(
@@ -43,20 +64,88 @@
 			: ''
 	);
 
+	function addFiles(files: FileList): void {
+		error = null;
+		const added: MediaDraft[] = [];
+		for (const file of Array.from(files)) {
+			if (drafts.length + added.length >= session.limits.maxMediaAttachments) {
+				error = `Maximal ${session.limits.maxMediaAttachments} Anhänge pro Beitrag.`;
+				break;
+			}
+			const problem = validateMediaFile(file, session.limits);
+			if (problem) {
+				error = problem;
+				continue;
+			}
+			added.push(createMediaDraft(file));
+		}
+		if (added.length) drafts = [...drafts, ...added];
+	}
+
+	function removeDraft(draft: MediaDraft): void {
+		revokeMediaDraft(draft);
+		drafts = drafts.filter((item) => item !== draft);
+	}
+
+	function describeDraft(draft: MediaDraft, description: string): void {
+		draft.description = description;
+	}
+
+	/**
+	 * Upload everything not on the server yet. Attachments already uploaded
+	 * during a failed attempt keep their id and are skipped, so retrying the
+	 * post never duplicates media.
+	 */
+	async function uploadDrafts(): Promise<boolean> {
+		const pending = drafts.filter((draft) => !draft.id);
+		const results = await Promise.allSettled(
+			pending.map(async (draft) => {
+				draft.uploading = true;
+				draft.error = null;
+				try {
+					const media = await uploadMedia({
+						file: draft.file,
+						description: draft.description.trim()
+					});
+					draft.id = media.id;
+				} catch (err) {
+					draft.error = err instanceof Error ? err.message : 'Upload fehlgeschlagen.';
+					throw err;
+				} finally {
+					draft.uploading = false;
+				}
+			})
+		);
+		return results.every((result) => result.status === 'fulfilled');
+	}
+
+	function reset(): void {
+		text = '';
+		spoilerText = '';
+		cwEnabled = false;
+		sensitive = false;
+		drafts.forEach(revokeMediaDraft);
+		drafts = [];
+	}
+
 	async function submit() {
 		if (!canSubmit) return;
 		submitting = true;
 		error = null;
 		try {
+			if (!(await uploadDrafts())) {
+				error = 'Mindestens ein Anhang konnte nicht hochgeladen werden.';
+				return;
+			}
 			const created = await postStatus({
 				status: text,
 				spoilerText: cwEnabled ? spoilerText : undefined,
 				visibility,
-				inReplyToId: inReplyTo?.id
+				inReplyToId: inReplyTo?.id,
+				sensitive,
+				mediaIds: drafts.length ? drafts.map((draft) => draft.id!) : undefined
 			});
-			text = '';
-			spoilerText = '';
-			cwEnabled = false;
+			reset();
 			onPosted?.(created);
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Beitrag konnte nicht gesendet werden.';
@@ -64,6 +153,9 @@
 			submitting = false;
 		}
 	}
+
+	// Object URLs leak memory if the composer goes away with drafts staged.
+	onDestroy(() => drafts.forEach(revokeMediaDraft));
 
 	function onKeydown(event: KeyboardEvent) {
 		if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
@@ -107,6 +199,17 @@
 				class="w-full resize-none bg-transparent text-post leading-relaxed text-ink-strong placeholder-ink-faint outline-none"
 			></textarea>
 
+			<MediaPicker
+				{drafts}
+				limit={session.limits.maxMediaAttachments}
+				descriptionLimit={session.limits.descriptionLimit}
+				{accept}
+				disabled={submitting}
+				onFiles={addFiles}
+				onRemove={removeDraft}
+				onDescribe={describeDraft}
+			/>
+
 			<div class="mt-2 flex flex-wrap items-center gap-2">
 				<button
 					type="button"
@@ -119,6 +222,20 @@
 					<Icon name="alert" size={15} />
 					CW
 				</button>
+
+				{#if drafts.length}
+					<button
+						type="button"
+						class="flex items-center gap-1 rounded-md px-2 py-1 text-xs hover:bg-accent/10 {sensitive
+							? 'text-warn'
+							: 'text-ink-soft'}"
+						onclick={() => (sensitive = !sensitive)}
+						title="Medien als sensibel markieren"
+					>
+						<Icon name="eye" size={15} />
+						Sensibel
+					</button>
+				{/if}
 
 				<label class="flex items-center gap-1 text-xs text-ink-soft">
 					<Icon name="globe" size={15} />
@@ -150,7 +267,7 @@
 					class="flex items-center gap-1.5 rounded-full bg-accent px-3.5 py-1.5 text-sm font-semibold text-accent-ink transition enabled:hover:bg-accent/90 disabled:cursor-not-allowed disabled:opacity-40"
 				>
 					<Icon name="send" size={15} />
-					{submitting ? 'Sendet…' : 'Posten'}
+					{uploading ? 'Lädt hoch…' : submitting ? 'Sendet…' : 'Posten'}
 				</button>
 			</div>
 

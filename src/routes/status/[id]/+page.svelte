@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import Icon from '#lib/components/Icon.svelte';
 	import Composer from '#lib/components/Composer.svelte';
@@ -35,6 +36,13 @@
 	function onPosted(created: Status): void {
 		descendants = [...descendants, created];
 	}
+
+	/** Drop a deleted post from our local lists; leaving the page if it was the subject. */
+	function onDeleted(id: string): void {
+		ancestors = ancestors.filter((item) => item.id !== id);
+		descendants = descendants.filter((item) => item.id !== id);
+		if (status?.id === id) void goto('/');
+	}
 </script>
 
 <header
@@ -60,14 +68,14 @@
 	</div>
 {:else if status}
 	{#each ancestors as ancestor (ancestor.id)}
-		<StatusCard status={ancestor} />
+		<StatusCard status={ancestor} {onDeleted} />
 	{/each}
 
-	<StatusCard {status} detail />
+	<StatusCard {status} detail {onDeleted} />
 
 	<Composer inReplyTo={status} placeholder="Antwort schreiben…" {onPosted} />
 
 	{#each descendants as descendant (descendant.id)}
-		<StatusCard status={descendant} />
+		<StatusCard status={descendant} {onDeleted} />
 	{/each}
 {/if}

@@ -12,7 +12,7 @@
 	import { homeFeed, localFeed } from '#lib/stores/feed.svelte.ts';
 	import { notificationsFeed } from '#lib/stores/notifications.svelte.ts';
 	import { preferences } from '#lib/stores/preferences.svelte.ts';
-	import { applyStatusUpdate } from '#lib/stores/statusSync.ts';
+	import { applyStatusRemoval, applyStatusUpdate } from '#lib/stores/statusSync.ts';
 	import { pushStore } from '#lib/push/push.svelte.ts';
 	import { streamer } from '#lib/stores/streamer.svelte.ts';
 
@@ -124,7 +124,7 @@
 					homeFeed.prepend(event.payload as Status);
 					break;
 				case 'delete':
-					homeFeed.remove(String(event.payload));
+					applyStatusRemoval(String(event.payload));
 					break;
 				case 'status.update':
 					applyStatusUpdate(event.payload as Status);

@@ -2,6 +2,7 @@
 	import { goto } from '$app/navigation';
 	import {
 		bookmark,
+		deleteStatus,
 		favourite,
 		reblog,
 		unbookmark,
@@ -10,11 +11,12 @@
 	} from '#lib/api/gotosocial.ts';
 	import type { Status } from '#lib/api/types.ts';
 	import { session } from '#lib/auth/session.svelte.ts';
-	import { applyStatusUpdate } from '#lib/stores/statusSync.ts';
+	import { applyStatusRemoval, applyStatusUpdate } from '#lib/stores/statusSync.ts';
 	import { formatCount } from '#lib/utils/format.ts';
 	import { emojify, withExternalLinks } from '#lib/utils/text.ts';
 	import { absoluteTime, relativeTime } from '#lib/utils/time.ts';
 	import Avatar from './Avatar.svelte';
+	import ConfirmDialog from './ConfirmDialog.svelte';
 	import Icon from './Icon.svelte';
 	import MediaGrid from './MediaGrid.svelte';
 	import StatusEditor from './StatusEditor.svelte';
@@ -23,15 +25,18 @@
 		status: Status;
 		/** Roomier typography for the single-status (thread) view. */
 		detail?: boolean;
+		/** Lets a host view (e.g. the thread page) drop a deleted post from its lists. */
+		onDeleted?: (id: string) => void;
 	}
 
-	let { status, detail = false }: Props = $props();
+	let { status, detail = false, onDeleted }: Props = $props();
 
 	// Seeded from the status so a CW starts collapsed; each card is keyed by id.
 	// svelte-ignore state_referenced_locally
 	let showContent = $state(!status.spoiler_text);
 	let busy = $state(false);
 	let editing = $state(false);
+	let confirmingDelete = $state(false);
 
 	/** Only the author may edit a post (GtS enforces it too). */
 	const isOwn = $derived(session.account?.id === status.account.id);
@@ -132,6 +137,17 @@
 		status.media_attachments = updated.media_attachments;
 		applyStatusUpdate(updated);
 	}
+
+	/**
+	 * Delete the post: drop it from the feeds/notifications we keep in stores,
+	 * then let the host view (thread page) clean up its own lists. Errors bubble
+	 * up to ConfirmDialog, which shows them and keeps the dialog open.
+	 */
+	async function confirmDelete(): Promise<void> {
+		await deleteStatus(status.id);
+		applyStatusRemoval(status.id);
+		onDeleted?.(status.id);
+	}
 </script>
 
 <!-- svelte-ignore a11y_click_events_have_key_events -->
@@ -165,15 +181,26 @@
 				<span class="text-ink-faint">· bearbeitet</span>
 			{/if}
 			{#if isOwn}
-				<button
-					type="button"
-					title="Beitrag bearbeiten"
-					class="ml-auto flex items-center gap-1 rounded-md px-1.5 py-0.5 text-xs text-ink-faint hover:bg-accent/10 hover:text-ink-strong"
-					onclick={() => (editing = true)}
-				>
-					<Icon name="pencil" size={14} />
-					Bearbeiten
-				</button>
+				<span class="ml-auto flex items-center gap-1">
+					<button
+						type="button"
+						title="Beitrag bearbeiten"
+						class="flex items-center gap-1 rounded-md px-1.5 py-0.5 text-xs text-ink-faint hover:bg-accent/10 hover:text-ink-strong"
+						onclick={() => (editing = true)}
+					>
+						<Icon name="pencil" size={14} />
+						Bearbeiten
+					</button>
+					<button
+						type="button"
+						title="Beitrag löschen"
+						class="flex items-center gap-1 rounded-md px-1.5 py-0.5 text-xs text-ink-faint hover:bg-danger/10 hover:text-danger"
+						onclick={() => (confirmingDelete = true)}
+					>
+						<Icon name="trash" size={14} />
+						Löschen
+					</button>
+				</span>
 			{/if}
 		</header>
 
@@ -302,5 +329,16 @@
 
 	{#if editing}
 		<StatusEditor {status} onClose={() => (editing = false)} onSaved={onEdited} />
+	{/if}
+
+	{#if confirmingDelete}
+		<ConfirmDialog
+			title="Beitrag löschen?"
+			body="Der Beitrag wird dauerhaft vom Server entfernt. Das kann nicht rückgängig gemacht werden."
+			confirmLabel="Löschen"
+			danger
+			onConfirm={confirmDelete}
+			onClose={() => (confirmingDelete = false)}
+		/>
 	{/if}
 </article>

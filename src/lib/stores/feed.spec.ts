@@ -49,3 +49,18 @@ describe('TimelineFeed.loadNew', () => {
 		expect(loader).not.toHaveBeenCalled();
 	});
 });
+
+describe('TimelineFeed.remove', () => {
+	it('drops the status and any boost wrapper around it', () => {
+		const feed = new TimelineFeed(vi.fn());
+		feed.items = [
+			status('other'),
+			{ id: 'boost', reblog: status('target') } as Status,
+			status('target')
+		];
+
+		feed.remove('target');
+
+		expect(feed.items.map((s) => s.id)).toEqual(['other']);
+	});
+});

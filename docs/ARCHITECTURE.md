@@ -155,10 +155,12 @@ src/
       Icon.svelte             # eigene Inline-SVG-Icons (keine Icon-Dependency)
       Avatar.svelte
       MediaGrid.svelte        # Anhänge, Sensitive-Blur, ALT-Badge
+      MediaPicker.svelte      # Anhänge im Composer: Vorschau, ALT-Text, Entfernen
       StatusBody.svelte       # eine Statusdarstellung (Inhalt, Aktionen, Umfrage, Card)
       StatusEditor.svelte     # modaler Dialog zum Bearbeiten eigener Beiträge
+      ConfirmDialog.svelte    # modaler Bestätigungsdialog (z. B. Löschen)
       StatusCard.svelte       # Boost-Wrapper um StatusBody
-      Composer.svelte         # Verfassen/Antworten
+      Composer.svelte         # Verfassen/Antworten inkl. Anhänge
       Sidebar.svelte          # Navigation (Desktop-Sidebar, mobile Bottom-Bar)
       TimelineView.svelte     # Liste + Infinite Scroll + Zustände
   routes/
@@ -211,6 +213,38 @@ Drei Eigenheiten der GtS-API bestimmen die Umsetzung:
 Nach dem Speichern wird das Status-Objekt direkt mutiert (damit die Thread-Ansicht mitzieht) und
 über `stores/statusSync.ts` (`applyStatusUpdate`) in beide Timelines und die Benachrichtigungen
 gespiegelt — dieselbe Funktion verarbeitet auch das `status.update`-Stream-Ereignis.
+
+## Anhänge
+
+Der Composer kann Bilder, Videos und Audio anhängen (`components/MediaPicker.svelte`). Die
+Dateien werden **erst beim Absenden** hochgeladen (`POST /api/v2/media`, `uploadMedia` in
+`api/gotosocial.ts`) — nicht schon bei der Auswahl. So bleiben keine verwaisten Anhänge
+zurück, wenn ein Entwurf verworfen wird; ein bereits hochgeladener Anhang behält bei einem
+erneuten Versuch seine ID und wird nicht doppelt gesendet.
+
+Zwei Eigenheiten der API bestimmen die Umsetzung:
+
+- **Kein 202/Polling.** GoToSocial verarbeitet synchron und antwortet mit `200 OK` und fertigem
+  Attachment (inkl. `url`) — anders als Mastodon, das `202 Accepted` samt Polling über
+  `GET /api/v1/media/:id` verlangt.
+- **ALT-Texte nur beim Upload.** `media_attributes` kennt nur `PUT /api/v1/statuses/:id`
+  (Bearbeiten), nicht das Anlegen; die Bildbeschreibung muss also beim Upload als
+  `description` mitgehen. Der Picker erfasst sie direkt an jedem Anhang.
+
+Die Limits (Anzahl, Bild-/Videogröße, Beschreibungs- und Zeichenlänge) kommen gebündelt aus
+`GET /api/v2/instance` (`getInstanceLimits` → `session.limits`), inklusive der akzeptierten
+MIME-Typen fürs `accept`-Attribut. Fehlen die Instanzangaben, greifen die Fallbacks aus
+`config.ts`. Dateityp und -größe werden schon vor dem Upload geprüft; der Upload selbst läuft
+parallel über `Promise.allSettled`, damit ein fehlgeschlagener Anhang die anderen nicht blockt.
+
+## Beiträge löschen
+
+„Löschen“ im Kopf eigener Beiträge öffnet `components/ConfirmDialog.svelte` (nativer
+`<dialog>`) und ruft `DELETE /api/v1/statuses/:id` auf. Danach räumt `applyStatusRemoval(id)`
+(`stores/statusSync.ts`) den Beitrag aus beiden Timelines und aus den Benachrichtigungen;
+dieselbe Funktion verarbeitet auch das `delete`-Stream-Ereignis. Die Thread-Ansicht hängt an
+der optionalen `onDeleted`-Prop, entfernt den Beitrag aus ihren lokalen Listen und verlässt
+die Seite, wenn der gelöschte Beitrag ihr Hauptstatus war.
 
 ## Erscheinungsbild & Barrierefreiheit
 
@@ -279,7 +313,8 @@ Live-Vorschau. `'system'` lauscht auf `prefers-color-scheme` und folgt Änderung
 
 ✅ Login, ✅ Start-/Lokale Timeline, ✅ Streaming, ✅ Composer, ✅ Favorit/Boost/Merken,
 ✅ Thread (Klick auf Beitrag), ✅ Benachrichtigungen, ✅ Push, ✅ Hell/Dunkel/System,
-✅ Schriftgröße, ✅ reduzierte Bewegung, ✅ Bearbeiten eigener Beiträge.
+✅ Schriftgröße, ✅ reduzierte Bewegung, ✅ Bearbeiten eigener Beiträge,
+✅ Anhänge (Bild/Video/Audio mit ALT-Text), ✅ Löschen eigener Beiträge.
 
 ## Nächste Schritte
 

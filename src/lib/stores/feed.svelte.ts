@@ -99,7 +99,9 @@ export class TimelineFeed {
 	}
 
 	remove(id: string): void {
-		this.items = this.items.filter((item) => item.id !== id);
+		// Also drop boosts that surface the deleted status, otherwise a wrapper
+		// whose original is gone would linger in the timeline.
+		this.items = this.items.filter((item) => item.id !== id && item.reblog?.id !== id);
 	}
 
 	replace(status: Status): void {

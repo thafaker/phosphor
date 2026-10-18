@@ -105,6 +105,11 @@ export class NotificationsFeed {
 		this.unread = 0;
 	}
 
+	/** Drop notifications that embed the given (deleted) status. */
+	removeStatus(id: string): void {
+		this.items = this.items.filter((item) => item.status?.id !== id);
+	}
+
 	reset(): void {
 		this.items = [];
 		this.loaded = false;

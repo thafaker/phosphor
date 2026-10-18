@@ -7,9 +7,11 @@
 	interface Props {
 		status: Status;
 		detail?: boolean;
+		/** Forwarded to StatusBody so a host view can drop a deleted post. */
+		onDeleted?: (id: string) => void;
 	}
 
-	let { status, detail = false }: Props = $props();
+	let { status, detail = false, onDeleted }: Props = $props();
 
 	const effective = $derived(status.reblog ?? status);
 	const booster = $derived(status.reblog ? status.account : null);
@@ -28,5 +30,5 @@
 			hat geboostet
 		</div>
 	{/if}
-	<StatusBody status={effective} {detail} />
+	<StatusBody status={effective} {detail} {onDeleted} />
 </article>

@@ -161,7 +161,14 @@ export interface StatusSource {
 }
 
 export interface InstanceConfiguration {
-	statuses?: { max_characters?: number };
+	statuses?: { max_characters?: number; max_media_attachments?: number };
+	/** Media upload limits, exposed via the v2 instance endpoint. */
+	media_attachments?: {
+		supported_mime_types?: string[];
+		image_size_limit?: number;
+		video_size_limit?: number;
+		description_limit?: number;
+	};
 	/** Web Push / VAPID config, exposed via the v2 instance endpoint. */
 	vapid?: { public_key?: string };
 }
@@ -171,6 +178,17 @@ export interface InstanceV2 {
 	title: string;
 	description: string;
 	configuration?: InstanceConfiguration;
+}
+
+/** The limits the composer cares about, resolved from either instance endpoint. */
+export interface InstanceLimits {
+	maxChars: number;
+	maxMediaAttachments: number;
+	imageSizeLimit: number;
+	videoSizeLimit: number;
+	descriptionLimit: number;
+	/** Empty when the instance doesn't advertise its accepted types. */
+	supportedMediaTypes: string[];
 }
 
 export interface InstanceV1 {

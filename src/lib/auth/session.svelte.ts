@@ -1,9 +1,15 @@
 import { goto } from '$app/navigation';
 import { setTokenGetter } from '#lib/api/client.ts';
-import { getInstanceLimit, verifyCredentials } from '#lib/api/gotosocial.ts';
+import { getInstanceLimits, verifyCredentials } from '#lib/api/gotosocial.ts';
 import { authorizeUrl, exchangeCode, registerApp, type RegisteredApp } from '#lib/api/oauth.ts';
-import type { Account } from '#lib/api/types.ts';
-import { DEFAULT_MAX_CHARS, SCOPES } from '#lib/config.ts';
+import type { Account, InstanceLimits } from '#lib/api/types.ts';
+import {
+	DEFAULT_MAX_CHARS,
+	DEFAULT_MAX_MEDIA_ATTACHMENTS,
+	DEFAULT_MEDIA_DESCRIPTION_LIMIT,
+	DEFAULT_MEDIA_SIZE_LIMIT,
+	SCOPES
+} from '#lib/config.ts';
 
 const STORAGE_KEY = 'phosphor:session:v1';
 const APP_KEY = 'phosphor:oauth-app:v1';
@@ -55,12 +61,23 @@ class Session {
 	account = $state<Account | null>(null);
 	ready = $state(false);
 	error = $state<string | null>(null);
-	maxChars = $state(DEFAULT_MAX_CHARS);
+	limits = $state<InstanceLimits>({
+		maxChars: DEFAULT_MAX_CHARS,
+		maxMediaAttachments: DEFAULT_MAX_MEDIA_ATTACHMENTS,
+		imageSizeLimit: DEFAULT_MEDIA_SIZE_LIMIT,
+		videoSizeLimit: DEFAULT_MEDIA_SIZE_LIMIT,
+		descriptionLimit: DEFAULT_MEDIA_DESCRIPTION_LIMIT,
+		supportedMediaTypes: []
+	});
 
 	app: RegisteredApp | null = null;
 
 	get loggedIn(): boolean {
 		return this.token !== null && this.account !== null;
+	}
+
+	get maxChars(): number {
+		return this.limits.maxChars;
 	}
 
 	/** Restore a saved session (if any) and validate it against the instance. */
@@ -77,7 +94,7 @@ class Session {
 
 		try {
 			this.account = await verifyCredentials();
-			this.maxChars = await getInstanceLimit();
+			this.limits = await getInstanceLimits();
 		} catch {
 			this.clear();
 		} finally {
@@ -123,7 +140,7 @@ class Session {
 		this.token = token;
 		setTokenGetter(() => this.token);
 		this.account = await verifyCredentials();
-		this.maxChars = await getInstanceLimit();
+		this.limits = await getInstanceLimits();
 
 		localStorage.setItem(STORAGE_KEY, JSON.stringify({ app, token } satisfies PersistedSession));
 	}

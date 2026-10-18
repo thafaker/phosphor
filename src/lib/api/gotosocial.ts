@@ -1,10 +1,17 @@
-import { DEFAULT_MAX_CHARS } from '#lib/config.ts';
+import {
+	DEFAULT_MAX_CHARS,
+	DEFAULT_MAX_MEDIA_ATTACHMENTS,
+	DEFAULT_MEDIA_DESCRIPTION_LIMIT,
+	DEFAULT_MEDIA_SIZE_LIMIT
+} from '#lib/config.ts';
 import { apiRequest } from './client';
 import type {
 	Account,
 	Context,
+	InstanceLimits,
 	InstanceV1,
 	InstanceV2,
+	MediaAttachment,
 	Notification,
 	Status,
 	StatusSource,
@@ -81,6 +88,8 @@ export interface PostStatusInput {
 	inReplyToId?: string;
 	sensitive?: boolean;
 	language?: string;
+	/** Ids of already-uploaded attachments to include. */
+	mediaIds?: string[];
 }
 
 export function postStatus(input: PostStatusInput): Promise<Status> {
@@ -92,9 +101,38 @@ export function postStatus(input: PostStatusInput): Promise<Status> {
 			visibility: input.visibility,
 			in_reply_to_id: input.inReplyToId,
 			sensitive: input.sensitive,
-			language: input.language
+			language: input.language,
+			media_ids: input.mediaIds
 		}
 	});
+}
+
+/** Delete an own status (`DELETE /api/v1/statuses/:id`). */
+export function deleteStatus(id: string): Promise<Status> {
+	return apiRequest<Status>(`/api/v1/statuses/${id}`, { method: 'DELETE' });
+}
+
+export interface UploadMediaInput {
+	file: File;
+	/** Alt text. Optional, but strongly encouraged — it's the only a11y hook. */
+	description?: string;
+}
+
+/**
+ * Upload an attachment (`POST /api/v2/media`).
+ *
+ * Unlike Mastodon, GoToSocial does the processing inline and answers `200 OK`
+ * with a finished attachment (with `url` already set) instead of `202`, so the
+ * caller does not have to poll for the media to become ready.
+ *
+ * The request is multipart/form-data: `apiRequest` passes a FormData body
+ * through untouched so the browser can set the multipart boundary.
+ */
+export function uploadMedia(input: UploadMediaInput): Promise<MediaAttachment> {
+	const form = new FormData();
+	form.append('file', input.file, input.file.name);
+	if (input.description) form.append('description', input.description);
+	return apiRequest<MediaAttachment>('/api/v2/media', { method: 'POST', body: form });
 }
 
 /** Raw, unrendered text of a status — the only sane basis for an edit form. */
@@ -155,21 +193,47 @@ export function clearNotifications(): Promise<void> {
 	return apiRequest<void>('/api/v1/notifications/clear', { method: 'POST' });
 }
 
-/** Best-effort lookup of the instance's post character limit. */
-export async function getInstanceLimit(): Promise<number> {
+/**
+ * Resolve the limits the composer needs (characters, media count/size).
+ *
+ * The v2 endpoint is preferred: it's the only one carrying the media
+ * configuration, so one request yields every limit we care about.
+ */
+export async function getInstanceLimits(): Promise<InstanceLimits> {
 	try {
 		const v2 = await apiRequest<InstanceV2>('/api/v2/instance');
-		const limit = v2.configuration?.statuses?.max_characters;
-		if (limit) return limit;
+		const statuses = v2.configuration?.statuses;
+		const media = v2.configuration?.media_attachments;
+		return {
+			maxChars: statuses?.max_characters || DEFAULT_MAX_CHARS,
+			maxMediaAttachments: statuses?.max_media_attachments || DEFAULT_MAX_MEDIA_ATTACHMENTS,
+			imageSizeLimit: media?.image_size_limit || DEFAULT_MEDIA_SIZE_LIMIT,
+			videoSizeLimit: media?.video_size_limit || DEFAULT_MEDIA_SIZE_LIMIT,
+			descriptionLimit: media?.description_limit || DEFAULT_MEDIA_DESCRIPTION_LIMIT,
+			supportedMediaTypes: media?.supported_mime_types ?? []
+		};
 	} catch {
 		// fall through to v1
 	}
+
 	try {
 		const v1 = await apiRequest<InstanceV1>('/api/v1/instance');
-		const limit = v1.configuration?.statuses?.max_characters;
-		if (limit) return limit;
+		const maxChars = v1.configuration?.statuses?.max_characters;
+		if (maxChars) return { ...fallbackLimits(), maxChars };
 	} catch {
-		// ignore — use the default below
+		// ignore — use the defaults below
 	}
-	return DEFAULT_MAX_CHARS;
+
+	return fallbackLimits();
+}
+
+function fallbackLimits(): InstanceLimits {
+	return {
+		maxChars: DEFAULT_MAX_CHARS,
+		maxMediaAttachments: DEFAULT_MAX_MEDIA_ATTACHMENTS,
+		imageSizeLimit: DEFAULT_MEDIA_SIZE_LIMIT,
+		videoSizeLimit: DEFAULT_MEDIA_SIZE_LIMIT,
+		descriptionLimit: DEFAULT_MEDIA_DESCRIPTION_LIMIT,
+		supportedMediaTypes: []
+	};
 }

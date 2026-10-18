@@ -16,3 +16,14 @@ export function applyStatusUpdate(status: Status): void {
 	localFeed.replace(status);
 	notificationsFeed.replaceStatus(status);
 }
+
+/**
+ * Drop a deleted status from every place it's kept: timelines and any
+ * notification that embedded it. Also reached from the stream's `delete` event,
+ * so a post removed on another device disappears here too.
+ */
+export function applyStatusRemoval(id: string): void {
+	homeFeed.remove(id);
+	localFeed.remove(id);
+	notificationsFeed.removeStatus(id);
+}

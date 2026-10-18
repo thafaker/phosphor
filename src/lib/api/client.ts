@@ -61,8 +61,12 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
 		const token = tokenGetter();
 		if (token) headers.set('Authorization', `Bearer ${token}`);
 
-		let body: string | undefined;
-		if (options.body !== undefined) {
+		// Media uploads send a FormData body, which must be handed to fetch
+		// untouched so the browser sets the multipart boundary itself.
+		let body: BodyInit | undefined;
+		if (options.body instanceof FormData) {
+			body = options.body;
+		} else if (options.body !== undefined) {
 			headers.set('Content-Type', 'application/json');
 			body = JSON.stringify(options.body);
 		}

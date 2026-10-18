@@ -60,3 +60,18 @@ describe('NotificationsFeed.replaceStatus', () => {
 		expect(feed.items[2].status?.content).toBe('<p>fremd</p>');
 	});
 });
+
+describe('NotificationsFeed.removeStatus', () => {
+	it('drops only the notifications embedding the deleted status', () => {
+		const feed = new NotificationsFeed(vi.fn());
+		feed.items = [
+			{ id: 'n1', status: { id: 's1' } },
+			{ id: 'n2', account: { id: 'a1' } },
+			{ id: 'n3', status: { id: 's2' } }
+		] as unknown as Notification[];
+
+		feed.removeStatus('s1');
+
+		expect(feed.items.map((n) => n.id)).toEqual(['n2', 'n3']);
+	});
+});
