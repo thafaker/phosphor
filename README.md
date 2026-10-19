@@ -16,9 +16,11 @@ Bereits dabei:
 - OAuth-Login (App-Registrierung → `/oauth/authorize` → `/oauth/token`)
 - Start-Timeline und lokale Timeline, inkl. Infinite Scroll
 - Live-Streaming über WebSocket (neue Beiträge und Meldungen)
-- Beiträge verfassen (Inhaltswarnung, Sichtbarkeit)
+- Beiträge verfassen (Inhaltswarnung, Sichtbarkeit, Anhänge mit ALT-Text)
 - Favorisieren, Boosten, Merken
+- Eigene Beiträge bearbeiten und löschen
 - Thread-Ansicht mit Kontext
+- Profile: Bio, Felder, Zähler, Beiträge und Folgen/Entfolgen
 - Benachrichtigungen
 - Push-Benachrichtigungen per Web Push — ohne externen Relay, inkl. neuer Beiträge
   gefolgter Accounts (dort je Account über die „Glocke" aktivierbar)

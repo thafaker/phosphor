@@ -79,16 +79,16 @@
 					<Icon name={info.icon} size={18} class="text-accent" />
 					<div class="min-w-0 flex-1 text-sm text-ink-soft">
 						<a
-							href={notification.account.url}
-							target="_blank"
-							rel="noopener noreferrer"
+							href={`/accounts/${notification.account.id}`}
 							class="font-semibold text-ink-strong hover:underline"
 						>
 							{@html emojify(name, notification.account.emojis)}
 						</a>
 						{info.label}
 					</div>
-					<Avatar src={notification.account.avatar_static} alt={name} size={32} />
+					<a href={`/accounts/${notification.account.id}`} title={`@${notification.account.acct}`}>
+						<Avatar src={notification.account.avatar_static} alt={name} size={32} />
+					</a>
 					<span class="text-xs text-ink-faint">
 						{relativeTime(notification.created_at)}
 					</span>

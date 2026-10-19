@@ -242,3 +242,10 @@
 	font-weight: 600;
 	margin: 0.75rem 0 0.5rem;
 }
+
+/* Mastodon wraps the boring parts of a link in `invisible` spans (its own
+   stylesheet hides them). Without the rule, field values would show the full
+   https://…/path instead of just the domain. */
+.status-content .invisible {
+	display: none;
+}

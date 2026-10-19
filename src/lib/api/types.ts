@@ -39,6 +39,25 @@ export interface Account {
 	fields: AccountField[];
 }
 
+/** The viewer's relationship to another account (`/accounts/relationships`). */
+export interface Relationship {
+	id: string;
+	following: boolean;
+	showing_reblogs: boolean;
+	notifying: boolean;
+	followed_by: boolean;
+	blocking: boolean;
+	blocked_by: boolean;
+	muting: boolean;
+	muting_notifications: boolean;
+	/** A follow request is pending because the target account is locked. */
+	requested: boolean;
+	requested_by: boolean;
+	domain_blocking: boolean;
+	endorsed: boolean;
+	note: string;
+}
+
 export type MediaType = 'unknown' | 'image' | 'gifv' | 'video' | 'audio';
 
 export interface MediaAttachment {

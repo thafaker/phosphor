@@ -153,16 +153,14 @@
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <article class="flex gap-3 px-4 py-3" class:cursor-pointer={!detail} onclick={openThread}>
-	<a href={status.account.url} target="_blank" rel="noopener noreferrer" class="shrink-0">
+	<a href={`/accounts/${status.account.id}`} class="shrink-0" title={`@${status.account.acct}`}>
 		<Avatar src={status.account.avatar_static} alt={name} size={detail ? 52 : 44} />
 	</a>
 
 	<div class="min-w-0 flex-1">
 		<header class="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-sm">
 			<a
-				href={status.account.url}
-				target="_blank"
-				rel="noopener noreferrer"
+				href={`/accounts/${status.account.id}`}
 				class="font-semibold text-ink-strong hover:underline"
 			>
 				{@html nameHtml}

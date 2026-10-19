@@ -6,9 +6,18 @@
 	interface Props {
 		feed: TimelineFeed;
 		emptyText?: string;
+		/** Second, smaller line under the empty state; pass '' to hide it. */
+		emptyHint?: string;
+		/** Forwarded to each card so a host view can drop a deleted post. */
+		onDeleted?: (id: string) => void;
 	}
 
-	let { feed, emptyText = 'Hier ist noch nichts.' }: Props = $props();
+	let {
+		feed,
+		emptyText = 'Hier ist noch nichts.',
+		emptyHint = 'Folge ein paar Leuten — GoToSocial zeigt dir nur neue Beiträge, keine alten.',
+		onDeleted
+	}: Props = $props();
 
 	let sentinel: HTMLDivElement | undefined = $state();
 
@@ -66,13 +75,13 @@
 	<div class="px-6 py-16 text-center text-ink-faint">
 		<Icon name="sparkles" size={28} class="mx-auto mb-3 text-ink-soft" />
 		<p>{emptyText}</p>
-		<p class="mt-1 text-sm">
-			Folge ein paar Leuten — GoToSocial zeigt dir nur neue Beiträge, keine alten.
-		</p>
+		{#if emptyHint}
+			<p class="mt-1 text-sm">{emptyHint}</p>
+		{/if}
 	</div>
 {:else}
 	{#each feed.items as status (status.id)}
-		<StatusCard {status} />
+		<StatusCard {status} {onDeleted} />
 	{/each}
 {/if}
 

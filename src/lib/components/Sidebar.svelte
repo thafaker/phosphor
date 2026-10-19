@@ -6,12 +6,15 @@
 	import Avatar from './Avatar.svelte';
 	import Icon from './Icon.svelte';
 
-	const items = [
+	const items = $derived([
 		{ href: '/', label: 'Start', icon: 'home' },
 		{ href: '/notifications', label: 'Meldungen', icon: 'bell' },
 		{ href: '/local', label: 'Lokal', icon: 'globe' },
+		...(session.account
+			? [{ href: `/accounts/${session.account.id}`, label: 'Profil', icon: 'user' }]
+			: []),
 		{ href: '/settings', label: 'Einstellungen', icon: 'settings' }
-	];
+	]);
 
 	function isActive(href: string): boolean {
 		return href === '/' ? page.url.pathname === '/' : page.url.pathname.startsWith(href);
@@ -64,11 +67,17 @@
 	<div class="hidden md:mt-auto md:block">
 		{#if session.account}
 			<div class="flex items-center gap-2 rounded-lg px-1 py-2">
-				<Avatar src={session.account.avatar_static} alt={session.account.username} size={36} />
-				<div class="min-w-0 flex-1">
-					<p class="truncate text-sm font-medium text-ink-strong">{@html accountName}</p>
-					<p class="truncate text-xs text-ink-faint">@{session.account.acct}</p>
-				</div>
+				<a
+					href={`/accounts/${session.account.id}`}
+					class="flex min-w-0 flex-1 items-center gap-2 rounded-lg hover:opacity-80"
+					title="Eigenes Profil"
+				>
+					<Avatar src={session.account.avatar_static} alt={session.account.username} size={36} />
+					<div class="min-w-0 flex-1">
+						<p class="truncate text-sm font-medium text-ink-strong">{@html accountName}</p>
+						<p class="truncate text-xs text-ink-faint">@{session.account.acct}</p>
+					</div>
+				</a>
 				<button
 					type="button"
 					onclick={() => session.logout()}

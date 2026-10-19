@@ -33,3 +33,8 @@ export function absoluteTime(iso: string, locale = 'de'): string {
 		new Date(iso)
 	);
 }
+
+/** Date without the time, e.g. for "joined on …" on a profile. */
+export function absoluteDate(iso: string, locale = 'de'): string {
+	return new Intl.DateTimeFormat(locale, { dateStyle: 'long' }).format(new Date(iso));
+}

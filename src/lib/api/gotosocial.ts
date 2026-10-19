@@ -13,6 +13,7 @@ import type {
 	InstanceV2,
 	MediaAttachment,
 	Notification,
+	Relationship,
 	Status,
 	StatusSource,
 	Visibility
@@ -51,6 +52,51 @@ export function publicTimeline(
 
 export function getStatus(id: string): Promise<Status> {
 	return apiRequest<Status>(`/api/v1/statuses/${id}`);
+}
+
+export function getAccount(id: string): Promise<Account> {
+	return apiRequest<Account>(`/api/v1/accounts/${id}`);
+}
+
+export interface AccountStatusesParams {
+	limit?: number;
+	maxId?: string;
+	/** Defaults to true on the server as well, but we want it explicit. */
+	excludeReplies?: boolean;
+	excludeReblogs?: boolean;
+	onlyMedia?: boolean;
+	pinned?: boolean;
+}
+
+export function accountStatuses(id: string, params: AccountStatusesParams = {}): Promise<Status[]> {
+	return apiRequest<Status[]>(`/api/v1/accounts/${id}/statuses`, {
+		query: {
+			limit: params.limit ?? 20,
+			max_id: params.maxId,
+			exclude_replies: params.excludeReplies,
+			exclude_reblogs: params.excludeReblogs,
+			only_media: params.onlyMedia,
+			pinned: params.pinned
+		}
+	});
+}
+
+/** The viewer's relationship to an account. `null` if the server has none. */
+export async function getRelationship(id: string): Promise<Relationship | null> {
+	const relationships = await apiRequest<Relationship[]>('/api/v1/accounts/relationships', {
+		query: { 'id[]': id }
+	});
+	return relationships[0] ?? null;
+}
+
+/** Follow an account; for a locked account this creates a pending request. */
+export function followAccount(id: string): Promise<Relationship> {
+	return apiRequest<Relationship>(`/api/v1/accounts/${id}/follow`, { method: 'POST' });
+}
+
+/** Unfollow an account — also withdraws a pending follow request. */
+export function unfollowAccount(id: string): Promise<Relationship> {
+	return apiRequest<Relationship>(`/api/v1/accounts/${id}/unfollow`, { method: 'POST' });
 }
 
 export function getContext(id: string): Promise<Context> {

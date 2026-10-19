@@ -163,6 +163,7 @@ src/
       Composer.svelte         # Verfassen/Antworten inkl. Anhänge
       Sidebar.svelte          # Navigation (Desktop-Sidebar, mobile Bottom-Bar)
       TimelineView.svelte     # Liste + Infinite Scroll + Zustände
+      AccountHeader.svelte    # Profilkopf: Headerbild, Bio, Felder, Zahlen, Folgen-Button
   routes/
     +layout.ts                # SPA-Modus
     +layout.svelte            # App-Hülle, Auth-Guard, Stream-Verdrahtung
@@ -174,6 +175,7 @@ src/
     notifications/+page.svelte
     settings/+page.svelte     # Erscheinungsbild, Schriftgröße & Push-Benachrichtigungen
     status/[id]/+page.svelte  # Thread (Vorfahren + Hauptstatus + Antworten)
+    accounts/[id]/+page.svelte # Profil: Kopf, Filter, Beiträge, Folgen/Entfolgen
 ```
 
 `static/sw.js` ist der (nicht cachende) Service Worker für Push.
@@ -246,6 +248,48 @@ dieselbe Funktion verarbeitet auch das `delete`-Stream-Ereignis. Die Thread-Ansi
 der optionalen `onDeleted`-Prop, entfernt den Beitrag aus ihren lokalen Listen und verlässt
 die Seite, wenn der gelöschte Beitrag ihr Hauptstatus war.
 
+## Profile
+
+Jeder Account ist unter `/accounts/[id]` erreichbar. Der Weg dorthin führt über Avatar und
+Anzeigename in `StatusBody.svelte`, den Booster-Hinweis in `StatusCard.svelte`, die Namen in den
+Meldungen und den eigenen Account in der `Sidebar.svelte` — überall also intern statt per
+`target="_blank"` auf die Heimatinstanz. So bleibt man in Phosphor und kann direkt folgen,
+favorisieren und boosten.
+
+Der Kopf (`components/AccountHeader.svelte`) zeigt Headerbild, Avatar, Anzeigename inkl.
+Custom-Emojis, Handle, Badges (Bot, privat, „Folgt dir“, „Du“), Bio als `{@html}`, Profilfelder
+mit Häkchen bei `verified_at`, die Zähler sowie das Beitrittsdatum und einen Link auf das
+Originalprofil.
+
+Bio und Feldwerte kommen als HTML an (dieselbe Konvention wie bei Mastodon, das sie ebenfalls
+clientseitig rendert); Feldnamen laufen zusätzlich durch `emojify`, weil sie Custom-Emojis als
+`:shortcode:` enthalten können. Mastodon versteckt in Link-Texten die uninteressanten Teile in
+`<span class="invisible">` — die Regel dafür steht in `layout.css` bei `.status-content`.
+
+Der Beziehungsstatus kommt aus `GET /api/v1/accounts/relationships?id[]=<id>` (`getRelationship`)
+und bestimmt die Schaltfläche:
+
+- **Folgen** → `POST /api/v1/accounts/:id/follow`
+- **Entfolgen** → `POST /api/v1/accounts/:id/unfollow`
+- Bei privaten Konten legt „Folgen“ serverseitig eine Anfrage an (`requested: true`); derselbe
+  `unfollow`-Aufruf zieht sie zurück. Die Auswahl trifft `followIntent()` in `utils/account.ts`.
+
+Beide Aufrufe liefern die aktualisierte `Relationship` zurück, die direkt übernommen wird — kein
+zweiter Request, keine pessimistischen Sperren. Fehlt die Relationship (z. B. weil die Instanz den
+entfernten Account noch nicht aufgelöst hat), startet die Schaltfläche bei „Folgen“; ein Fehler
+beim Folgen wird unter dem Kopf angezeigt.
+
+Für die Beiträge wird die vorhandene `TimelineFeed`-Klasse mit einem Loader auf
+`GET /api/v1/accounts/:id/statuses` instanziiert. Die Seite hält pro Konto und Filter je einen
+Feed, sodass `TimelineView` Infinite Scroll und Ladezustände wie in den Timelines übernimmt.
+Umschaltbar sind „Beiträge“ (`exclude_replies=true`), „Mit Antworten“ und „Medien“
+(`only_media=true`). Eigene, hier gelöschte Beiträge verschwinden über den `onDeleted`-Callback
+aus der Liste.
+
+Bewusst offen: „Annehmen/Ablehnen“ für Follow-Anfragen, Blockieren/Stummschalten sowie das
+Auflösen von @-Erwähnungen im Beitragstext zu internen Profillinks (die Erwähnung müsste dafür
+erst über `/api/v1/accounts/lookup` auf eine ID abgebildet werden).
+
 ## Erscheinungsbild & Barrierefreiheit
 
 Phosphor hatte ursprünglich ein festes Dark-Theme. Barrierefreiheit hat Vorrang, deshalb gibt
@@ -314,17 +358,20 @@ Live-Vorschau. `'system'` lauscht auf `prefers-color-scheme` und folgt Änderung
 ✅ Login, ✅ Start-/Lokale Timeline, ✅ Streaming, ✅ Composer, ✅ Favorit/Boost/Merken,
 ✅ Thread (Klick auf Beitrag), ✅ Benachrichtigungen, ✅ Push, ✅ Hell/Dunkel/System,
 ✅ Schriftgröße, ✅ reduzierte Bewegung, ✅ Bearbeiten eigener Beiträge,
-✅ Anhänge (Bild/Video/Audio mit ALT-Text), ✅ Löschen eigener Beiträge.
+✅ Anhänge (Bild/Video/Audio mit ALT-Text), ✅ Löschen eigener Beiträge,
+✅ Profile (`/accounts/[id]` mit Bio, Beiträgen, Folgen/Entfolgen).
 
 ## Nächste Schritte
 
-1. **Profile** (`/accounts/[id]`: Bio, Header, Follower-Zahlen, Beiträge, Folgen/Entfolgen).
-2. **Suche** (`/api/v2/search`) und Hashtag-Timelines.
-3. **Interaktionen im Thread**: Antworten inline, Kontext laden, Favoriten/Boosts live.
-4. **Meldungen filtern** (`types=`) und als gelesen markieren (`/notifications/clear`).
-5. **Bilder-Lightbox** und Video-Handling statt „neuer Tab“.
-6. **Offline-Cache** (der Service Worker existiert bereits für Push, cached aber bewusst nichts).
-7. **Barrierefreiheit** ausbauen und mit Screenreadern testen (Phanpys bekannte Schwäche).
-8. **i18n**: UI-Strings aus den Komponenten in Sprachdateien ziehen.
-9. **Multi-Instanz**: `INSTANCE_URL` von Konstante zu Session-State machen; Login mit
-   Instanz-Eingabe; App-Registrierung pro Instanz cachen.
+1. **Suche** (`/api/v2/search`) und Hashtag-Timelines.
+2. **Interaktionen im Thread**: Antworten inline, Kontext laden, Favoriten/Boosts live.
+3. **Meldungen filtern** (`types=`) und als gelesen markieren (`/notifications/clear`).
+4. **Bilder-Lightbox** und Video-Handling statt „neuer Tab“.
+5. **Follow-Anfragen & Moderation**: Annehmen/Ablehnen (`/api/v1/follow_requests`),
+   Blockieren/Stummschalten aus dem Profil.
+6. **@-Erwähnungen im Text** zu internen Profillinks auflösen.
+7. **Offline-Cache** (der Service Worker existiert bereits für Push, cached aber bewusst nichts).
+8. **Barrierefreiheit** ausbauen und mit Screenreadern testen (Phanpys bekannte Schwäche).
+9. **i18n**: UI-Strings aus den Komponenten in Sprachdateien ziehen.
+10. **Multi-Instanz**: `INSTANCE_URL` von Konstante zu Session-State machen; Login mit
+    Instanz-Eingabe; App-Registrierung pro Instanz cachen.

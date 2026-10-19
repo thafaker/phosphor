@@ -24,7 +24,7 @@
 	{#if booster}
 		<div class="flex items-center gap-2 px-4 pt-3 text-xs text-ink-soft">
 			<Icon name="boost" size={14} />
-			<a href={booster.url} target="_blank" rel="noopener noreferrer" class="hover:underline">
+			<a href={`/accounts/${booster.id}`} class="hover:underline">
 				{@html boosterName}
 			</a>
 			hat geboostet
