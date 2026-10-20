@@ -248,6 +248,24 @@ dieselbe Funktion verarbeitet auch das `delete`-Stream-Ereignis. Die Thread-Ansi
 der optionalen `onDeleted`-Prop, entfernt den Beitrag aus ihren lokalen Listen und verlässt
 die Seite, wenn der gelöschte Beitrag ihr Hauptstatus war.
 
+## Antworten & Erwähnungen
+
+Antworten tragen den Handle der beantworteten Person sichtbar voran (`@janmontag@host …`), genau
+wie Mastodons eigener Client. Das ist kein Kosmetik: GoToSocial 0.22.2 bildet die Mentionsliste
+ausschließlich aus dem Text und leitet daraus `to`/`cc`, das `tag:mention` und die Meldung ab.
+Ohne Erwähnung gibt es für die beantwortete Person also keine Meldung — und wer uns nicht folgt,
+bekommt den Beitrag auf fremden Instanzen gar nicht erst zugestellt (verifiziert mit einer
+Sandbox-Instanz derselben Binärdatei: Antwort ohne Erwähnung → 0 Meldungen, mit `@alice` oder
+`@alice@domain` → Meldung vom Typ `mention`).
+
+Der Composer (`components/Composer.svelte`) setzt den Handle beim Zielwechsel als Textanfang und
+lässt ihn bewusst editierbar: Wer ihn löscht, verzichtet auf die Erwähnung. `replyMention()` in
+`utils/account.ts` liefert den Handle (`acct`, ferne Konten also mit Domain; beide Formen löst
+GoToSocial auf) und `null` bei Antworten auf sich selbst, weil eine Selbst-Erwähnung nur uns
+selbst eine Meldung beschert. Ein Entwurf, der mit auf ein anderes Ziel wechselt, wird nur am
+Handle umadressiert; nach dem Posten bleibt der Composer in der Antwort-Modus und stellt den
+Handle erneut bereit.
+
 ## Profile
 
 Jeder Account ist unter `/accounts/[id]` erreichbar. Der Weg dorthin führt über Avatar und
@@ -359,7 +377,8 @@ Live-Vorschau. `'system'` lauscht auf `prefers-color-scheme` und folgt Änderung
 ✅ Thread (Klick auf Beitrag), ✅ Benachrichtigungen, ✅ Push, ✅ Hell/Dunkel/System,
 ✅ Schriftgröße, ✅ reduzierte Bewegung, ✅ Bearbeiten eigener Beiträge,
 ✅ Anhänge (Bild/Video/Audio mit ALT-Text), ✅ Löschen eigener Beiträge,
-✅ Profile (`/accounts/[id]` mit Bio, Beiträgen, Folgen/Entfolgen).
+✅ Profile (`/accounts/[id]` mit Bio, Beiträgen, Folgen/Entfolgen),
+✅ Antworten mit sichtbarer @-Erwähnung.
 
 ## Nächste Schritte
 

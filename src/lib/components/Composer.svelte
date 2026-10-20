@@ -9,6 +9,7 @@
 		validateMediaFile,
 		type MediaDraft
 	} from '#lib/utils/media.ts';
+	import { replyMention } from '#lib/utils/account.ts';
 	import { emojify } from '#lib/utils/text.ts';
 	import Avatar from './Avatar.svelte';
 	import Icon from './Icon.svelte';
@@ -63,6 +64,33 @@
 				)
 			: ''
 	);
+
+	const replyHandle = $derived(inReplyTo ? replyMention(inReplyTo.account, session.account) : null);
+
+	/** Reply target whose mention currently sits in the text, and which handle that was. */
+	let seeded = { id: '', handle: '' };
+
+	// Mastodon-style: the mention of the replied-to account is part of the text,
+	// so it is visible, counted against the limit and editable like anything else.
+	// GoToSocial notifies and addresses the other instance only from that text.
+	$effect(() => {
+		const id = inReplyTo?.id ?? '';
+		if (id === seeded.id) return;
+
+		const previous = seeded.handle;
+		seeded = { id, handle: '' };
+		if (!replyHandle) return;
+
+		if (text.trim() === '') {
+			text = `${replyHandle} `;
+		} else if (previous && text.startsWith(`${previous} `)) {
+			// A draft survives a change of target: keep the wording, re-address it.
+			text = `${replyHandle} ${text.slice(previous.length + 1)}`;
+		} else {
+			return;
+		}
+		seeded = { id, handle: replyHandle };
+	});
 
 	function addFiles(files: FileList): void {
 		error = null;
@@ -120,7 +148,9 @@
 	}
 
 	function reset(): void {
-		text = '';
+		// The composer stays in reply mode after posting, so a follow-up answer
+		// needs its mention just as much as the first one.
+		text = replyHandle ? `${replyHandle} ` : '';
 		spoilerText = '';
 		cwEnabled = false;
 		sensitive = false;
