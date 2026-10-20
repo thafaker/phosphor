@@ -18,7 +18,6 @@ import type {
 	StatusSource,
 	Visibility
 } from './types';
-
 export interface TimelineParams {
 	limit?: number;
 	maxId?: string;
@@ -237,6 +236,52 @@ export function getNotifications(
 
 export function clearNotifications(): Promise<void> {
 	return apiRequest<void>('/api/v1/notifications/clear', { method: 'POST' });
+}
+
+/**
+ * Accounts waiting for us to approve their follow request
+ * (`GET /api/v1/follow_requests`). Only ever non-empty for a locked account.
+ */
+export function getFollowRequests(params: TimelineParams = {}): Promise<Account[]> {
+	return apiRequest<Account[]>('/api/v1/follow_requests', {
+		query: { limit: params.limit ?? 40, max_id: params.maxId }
+	});
+}
+
+/** Accept a follow request (`POST /api/v1/follow_requests/:id/authorize`). */
+export function authorizeFollowRequest(id: string): Promise<Relationship> {
+	return apiRequest<Relationship>(`/api/v1/follow_requests/${id}/authorize`, { method: 'POST' });
+}
+
+/** Reject a follow request (`POST /api/v1/follow_requests/:id/reject`). */
+export function rejectFollowRequest(id: string): Promise<Relationship> {
+	return apiRequest<Relationship>(`/api/v1/follow_requests/${id}/reject`, { method: 'POST' });
+}
+
+/** Block an account; GoToSocial drops the follow relationships on both sides. */
+export function blockAccount(id: string): Promise<Relationship> {
+	return apiRequest<Relationship>(`/api/v1/accounts/${id}/block`, { method: 'POST' });
+}
+
+export function unblockAccount(id: string): Promise<Relationship> {
+	return apiRequest<Relationship>(`/api/v1/accounts/${id}/unblock`, { method: 'POST' });
+}
+
+/**
+ * Mute an account (`POST /api/v1/accounts/:id/mute`).
+ *
+ * `notifications` defaults to *false* in GoToSocial, which would let their
+ * mentions and favourites keep buzzing — so we always ask for `true` here.
+ */
+export function muteAccount(id: string, notifications = true): Promise<Relationship> {
+	return apiRequest<Relationship>(`/api/v1/accounts/${id}/mute`, {
+		method: 'POST',
+		body: { notifications }
+	});
+}
+
+export function unmuteAccount(id: string): Promise<Relationship> {
+	return apiRequest<Relationship>(`/api/v1/accounts/${id}/unmute`, { method: 'POST' });
 }
 
 /**

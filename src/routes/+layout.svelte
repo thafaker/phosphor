@@ -10,6 +10,7 @@
 	import type { Notification, Status } from '#lib/api/types.ts';
 	import { session } from '#lib/auth/session.svelte.ts';
 	import { homeFeed, localFeed } from '#lib/stores/feed.svelte.ts';
+	import { followRequests } from '#lib/stores/followRequests.svelte.ts';
 	import { notificationsFeed } from '#lib/stores/notifications.svelte.ts';
 	import { preferences } from '#lib/stores/preferences.svelte.ts';
 	import { applyStatusRemoval, applyStatusUpdate } from '#lib/stores/statusSync.ts';
@@ -104,6 +105,7 @@
 		if (token && session.loggedIn) {
 			streamer.connect(token);
 			void homeFeed.load();
+			void followRequests.load();
 			// Re-register an existing browser push subscription with the server,
 			// so a token that only later gained the `push` scope still ends up
 			// with a working subscription (see PushStore.refresh).
@@ -113,6 +115,7 @@
 			homeFeed.reset();
 			localFeed.reset();
 			notificationsFeed.reset();
+			followRequests.reset();
 		}
 	});
 
@@ -129,9 +132,17 @@
 				case 'status.update':
 					applyStatusUpdate(event.payload as Status);
 					break;
-				case 'notification':
-					notificationsFeed.prepend(event.payload as Notification);
+				case 'notification': {
+					const notification = event.payload as Notification;
+					notificationsFeed.prepend(notification);
+					// A new request has to show up in the sidebar badge, and an
+					// accepted/rejected one (both clients send the same events) has
+					// to leave the list: GoToSocial swaps the `follow_request`
+					// notification for a `follow` one once it is approved.
+					if (notification.type === 'follow_request') followRequests.add(notification.account);
+					else if (notification.type === 'follow') followRequests.resolve(notification.account.id);
 					break;
+				}
 			}
 		});
 	});

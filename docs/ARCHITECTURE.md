@@ -63,7 +63,14 @@ wss://<instanz>/api/v1/streaming?access_token=<token>&stream=user
   - `update` → neuer Beitrag an den Anfang der Start-Timeline
   - `status.update` → bestehenden Beitrag ersetzen
   - `delete` → Beitrag entfernen
-  - `notification` → neue Meldung + Unread-Punkt
+  - `notification` → neue Meldung + Unread-Punkt; `follow_request` bzw. `follow` pflegen
+    zusätzlich die Liste der Folgenanfragen (siehe unten)
+
+Die Thread-Ansicht hört **selbst** mit (`streamer.subscribe`): `update` fügt eine neue Antwort,
+die in die offene Konversation gehört, an der richtigen Stelle ein und erhöht den Zähler des
+beantworteten Beitrags, `status.update` und `delete` halten Vorfahren und Antworten aktuell.
+Nur Beiträge von Accounts, denen wir folgen (und eigene), kommen über den Stream — Antworten
+Fremder erscheinen erst beim nächsten Nachladen.
 
 ## Wiederaufnahme aus dem Hintergrund
 
@@ -149,6 +156,7 @@ src/
       streamer.svelte.ts      # zentrale Stream-Verteilung
       feed.svelte.ts          # TimelineFeed-Klasse; homeFeed & localFeed
       notifications.svelte.ts # Meldungen + Unread-Zähler
+      followRequests.svelte.ts # offene Folgenanfragen (Liste + Annahme/Ablehnung)
       statusSync.ts           # bearbeiteten Status in alle Ansichten spiegeln
       preferences.svelte.ts   # Theme + Schriftgröße (persistiert)
     components/
@@ -158,12 +166,13 @@ src/
       MediaPicker.svelte      # Anhänge im Composer: Vorschau, ALT-Text, Entfernen
       StatusBody.svelte       # eine Statusdarstellung (Inhalt, Aktionen, Umfrage, Card)
       StatusEditor.svelte     # modaler Dialog zum Bearbeiten eigener Beiträge
-      ConfirmDialog.svelte    # modaler Bestätigungsdialog (z. B. Löschen)
+      ConfirmDialog.svelte    # modaler Bestätigungsdialog (z. B. Löschen, Blockieren)
       StatusCard.svelte       # Boost-Wrapper um StatusBody
       Composer.svelte         # Verfassen/Antworten inkl. Anhänge
+      ReplyBox.svelte         # aufgeklappte Antwort direkt unter einem Beitrag
       Sidebar.svelte          # Navigation (Desktop-Sidebar, mobile Bottom-Bar)
       TimelineView.svelte     # Liste + Infinite Scroll + Zustände
-      AccountHeader.svelte    # Profilkopf: Headerbild, Bio, Felder, Zahlen, Folgen-Button
+      AccountHeader.svelte    # Profilkopf: Headerbild, Bio, Felder, Zahlen, Aktionen
   routes/
     +layout.ts                # SPA-Modus
     +layout.svelte            # App-Hülle, Auth-Guard, Stream-Verdrahtung
@@ -172,10 +181,11 @@ src/
     login/+page.svelte
     callback/+page.svelte
     local/+page.svelte        # lokale Timeline
+    follow_requests/+page.svelte # offene Folgenanfragen annehmen/ablehnen
     notifications/+page.svelte
     settings/+page.svelte     # Erscheinungsbild, Schriftgröße & Push-Benachrichtigungen
     status/[id]/+page.svelte  # Thread (Vorfahren + Hauptstatus + Antworten)
-    accounts/[id]/+page.svelte # Profil: Kopf, Filter, Beiträge, Folgen/Entfolgen
+    accounts/[id]/+page.svelte # Profil: Kopf, Filter, Beiträge, Folgen/Moderation
 ```
 
 `static/sw.js` ist der (nicht cachende) Service Worker für Push.
@@ -304,9 +314,66 @@ Umschaltbar sind „Beiträge“ (`exclude_replies=true`), „Mit Antworten“ u
 (`only_media=true`). Eigene, hier gelöschte Beiträge verschwinden über den `onDeleted`-Callback
 aus der Liste.
 
-Bewusst offen: „Annehmen/Ablehnen“ für Follow-Anfragen, Blockieren/Stummschalten sowie das
-Auflösen von @-Erwähnungen im Beitragstext zu internen Profillinks (die Erwähnung müsste dafür
-erst über `/api/v1/accounts/lookup` auf eine ID abgebildet werden).
+- `src/lib/utils/thread.ts` bündelt die reine Logik (`insertReply`, `applyThreadRevision`,
+  `mergeStatus`, `removeFromThread`), damit sie ohne Svelte testbar bleibt
+  (`thread.spec.ts`).
+
+## Antworten im Thread und in Timelines
+
+Antworten müssen nicht mehr den Thread öffnen: Die Antwort-Schaltfläche klappt einen
+Antwortkasten direkt **unter dem Beitrag** auf (`components/ReplyBox.svelte`, ein dünner
+Wrapper um den Composer mit Kontextzeile und Zuklappen). Sie toggelt — erneutes Drücken
+schließt wieder. Das gilt in der Start-/Lokal-/Profil-Timeline (`TimelineView`) und an jeder
+Station des Threads (Vorfahren, Hauptbeitrag, Antworten); der Composer am Ende der
+Thread-Seite bleibt für die Antwort auf den Hauptbeitrag.
+
+Gemerkt wird nicht das Status-Objekt, sondern seine **ID**: Feed- und Thread-Listen werden bei
+jedem Refresh neu aufgebaut, und ein Reply gegen eine veraltete Kopie würde den Zähler am
+falschen Objekt erhöhen. Nach dem Absenden schließt der Kasten, die neue Antwort wird in den
+Thread einsortiert (in der Timeline nur der `replies_count`-Zähler erhöht — sie gehört ja nicht
+in die Zeitleiste).
+
+## Folgenanfragen
+
+Bei einem privaten Profil legt „Folgen“ serverseitig eine Anfrage an. Sie landen unter
+`/follow_requests` (Sidebar-Eintrag „Anfragen“, mit Zahl-Badge), wo jeweils Annehmen
+(`POST /api/v1/follow_requests/:id/authorize`) und Ablehnen
+(`POST /api/v1/follow_requests/:id/reject`) möglich sind; beide Aufrufe antworten mit der
+aktualisierten `Relationship`. Der Sidebar-Eintrag erscheint nur, wenn das eigene Profil privat
+ist (`account.locked`) oder tatsächlich etwas offen ist.
+
+Zwei Wege halten die Liste aktuell, ohne zu pollen:
+
+- `GET /api/v1/follow_requests` beim Login (`stores/followRequests.svelte.ts`, lädt einmal) und
+  erneut beim Öffnen der Seite.
+- Der Stream: Eine `follow_request`-Meldung fügt den Account hinzu, eine `follow`-Meldung
+  entfernt ihn. GoToSocial ersetzt beim Annehmen die `follow_request`-Meldung durch eine
+  `follow`-Meldung — der zweite Zweig ist also die Bestätigung, wenn die Anfrage woanders
+  (anderes Gerät, andere App) beantwortet wurde.
+
+## Moderation im Profil
+
+Der Profilkopf (`components/AccountHeader.svelte`) hat neben „Folgen“ ein Menü (⋯) mit
+Stummschalten und Blockieren; der Zustand steht als Badge („Stummgeschaltet“, „Blockiert“)
+daneben, ebenso „Hat dich blockiert“ bei `blocked_by`. Blockieren fragt über
+`ConfirmDialog` nach, Stummschalten nicht (leicht reversibel, und der Menüeintrag toggelt).
+
+API-Eigenheiten, in einer Sandbox gegen dieselbe GtS-Version geprüft:
+
+- **`notifications` ist standardmäßig `false`.** `POST /api/v1/accounts/:id/mute` ohne Parameter
+  setzt `muting_notifications: false` — Meldungen der Person kämen also weiter durch.
+  `muteAccount()` sendet deshalb immer `notifications=true`.
+- **Blockieren trennt beide Richtungen** und antwortet mit `blocking: true, following: false,
+followed_by: false`.
+- **Alle drei Aufrufe liefern die frische `Relationship`** — kein Nachladen nötig.
+
+Antwortet jemand auf eine eigene Anfrage, kennt die Relationship das als `requested_by`: Ein
+solches Profil zeigt statt des Folgen-Buttons „Annehmen“/„Ablehnen“ und hält die Anfragenliste
+im Store synchron.
+
+Bewusst offen: Domänen-Blocks, `domain_blocking` und das Auflösen von @-Erwähnungen im
+Beitragstext zu internen Profillinks (die Erwähnung müsste dafür erst über
+`/api/v1/accounts/lookup` auf eine ID abgebildet werden).
 
 ## Erscheinungsbild & Barrierefreiheit
 
@@ -378,19 +445,18 @@ Live-Vorschau. `'system'` lauscht auf `prefers-color-scheme` und folgt Änderung
 ✅ Schriftgröße, ✅ reduzierte Bewegung, ✅ Bearbeiten eigener Beiträge,
 ✅ Anhänge (Bild/Video/Audio mit ALT-Text), ✅ Löschen eigener Beiträge,
 ✅ Profile (`/accounts/[id]` mit Bio, Beiträgen, Folgen/Entfolgen),
-✅ Antworten mit sichtbarer @-Erwähnung.
+✅ Antworten mit sichtbarer @-Erwähnung,
+✅ Antworten inline (Timeline & Thread), Live-Aktualisierung im Thread,
+✅ Folgenanfragen annehmen/ablehnen, ✅ Blockieren/Stummschalten aus dem Profil.
 
 ## Nächste Schritte
 
 1. **Suche** (`/api/v2/search`) und Hashtag-Timelines.
-2. **Interaktionen im Thread**: Antworten inline, Kontext laden, Favoriten/Boosts live.
-3. **Meldungen filtern** (`types=`) und als gelesen markieren (`/notifications/clear`).
-4. **Bilder-Lightbox** und Video-Handling statt „neuer Tab“.
-5. **Follow-Anfragen & Moderation**: Annehmen/Ablehnen (`/api/v1/follow_requests`),
-   Blockieren/Stummschalten aus dem Profil.
-6. **@-Erwähnungen im Text** zu internen Profillinks auflösen.
-7. **Offline-Cache** (der Service Worker existiert bereits für Push, cached aber bewusst nichts).
-8. **Barrierefreiheit** ausbauen und mit Screenreadern testen (Phanpys bekannte Schwäche).
-9. **i18n**: UI-Strings aus den Komponenten in Sprachdateien ziehen.
-10. **Multi-Instanz**: `INSTANCE_URL` von Konstante zu Session-State machen; Login mit
-    Instanz-Eingabe; App-Registrierung pro Instanz cachen.
+2. **Meldungen filtern** (`types=`) und gezielt als gelesen markieren.
+3. **Bilder-Lightbox** und Video-Handling statt „neuer Tab“.
+4. **@-Erwähnungen im Text** zu internen Profillinks auflösen.
+5. **Offline-Cache** (der Service Worker existiert bereits für Push, cached aber bewusst nichts).
+6. **Barrierefreiheit** ausbauen und mit Screenreadern testen (Phanpys bekannte Schwäche).
+7. **i18n**: UI-Strings aus den Komponenten in Sprachdateien ziehen.
+8. **Multi-Instanz**: `INSTANCE_URL` von Konstante zu Session-State machen; Login mit
+   Instanz-Eingabe; App-Registrierung pro Instanz cachen.

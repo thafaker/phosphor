@@ -1,6 +1,8 @@
 <script lang="ts">
+	import type { Status } from '#lib/api/types.ts';
 	import type { TimelineFeed } from '#lib/stores/feed.svelte.ts';
 	import Icon from './Icon.svelte';
+	import ReplyBox from './ReplyBox.svelte';
 	import StatusCard from './StatusCard.svelte';
 
 	interface Props {
@@ -20,6 +22,18 @@
 	}: Props = $props();
 
 	let sentinel: HTMLDivElement | undefined = $state();
+
+	/**
+	 * The post whose reply box is open. Tracked by id: the feed hands out fresh
+	 * objects on every refresh, and replying to a stale copy would count the
+	 * reply against the wrong list.
+	 */
+	let replyingTo = $state<string | null>(null);
+
+	/** A reply lands in the thread, not in this timeline — only the counter moves. */
+	function onReplyPosted(parent: Status): void {
+		parent.replies_count += 1;
+	}
 
 	// Kick off the first page once, when the view mounts.
 	$effect(() => {
@@ -81,7 +95,18 @@
 	</div>
 {:else}
 	{#each feed.items as status (status.id)}
-		<StatusCard {status} {onDeleted} />
+		<StatusCard
+			{status}
+			{onDeleted}
+			onReply={() => (replyingTo = replyingTo === status.id ? null : status.id)}
+		/>
+		{#if replyingTo === status.id}
+			<ReplyBox
+				status={status.reblog ?? status}
+				onClose={() => (replyingTo = null)}
+				onPosted={onReplyPosted}
+			/>
+		{/if}
 	{/each}
 {/if}
 

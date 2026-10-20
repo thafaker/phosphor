@@ -9,9 +9,14 @@
 		detail?: boolean;
 		/** Forwarded to StatusBody so a host view can drop a deleted post. */
 		onDeleted?: (id: string) => void;
+		/**
+		 * Opens an inline composer for this post. Receives the *effective*
+		 * status, so replying to a boost replies to its original.
+		 */
+		onReply?: (status: Status) => void;
 	}
 
-	let { status, detail = false, onDeleted }: Props = $props();
+	let { status, detail = false, onDeleted, onReply }: Props = $props();
 
 	const effective = $derived(status.reblog ?? status);
 	const booster = $derived(status.reblog ? status.account : null);
@@ -30,5 +35,10 @@
 			hat geboostet
 		</div>
 	{/if}
-	<StatusBody status={effective} {detail} {onDeleted} />
+	<StatusBody
+		status={effective}
+		{detail}
+		{onDeleted}
+		onReply={onReply ? () => onReply(effective) : undefined}
+	/>
 </article>

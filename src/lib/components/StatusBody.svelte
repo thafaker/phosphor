@@ -27,9 +27,14 @@
 		detail?: boolean;
 		/** Lets a host view (e.g. the thread page) drop a deleted post from its lists. */
 		onDeleted?: (id: string) => void;
+		/**
+		 * When set, the reply control opens an inline composer instead of the
+		 * thread page — the `detail` view has nothing to navigate to.
+		 */
+		onReply?: () => void;
 	}
 
-	let { status, detail = false, onDeleted }: Props = $props();
+	let { status, detail = false, onDeleted, onReply }: Props = $props();
 
 	// Seeded from the status so a CW starts collapsed; each card is keyed by id.
 	// svelte-ignore state_referenced_locally
@@ -282,14 +287,26 @@
 		{/if}
 
 		<footer class="mt-2.5 flex flex-wrap items-center gap-x-6 gap-y-1.5 text-ink-soft">
-			<a
-				href={`/status/${status.id}`}
-				class="flex items-center gap-1.5 text-sm hover:text-ink-strong"
-				title="Antworten"
-			>
-				<Icon name="reply" size={17} />
-				<span class="text-xs">{formatCount(status.replies_count)}</span>
-			</a>
+			{#if onReply}
+				<button
+					type="button"
+					class="flex items-center gap-1.5 text-sm hover:text-ink-strong"
+					title="Antworten"
+					onclick={onReply}
+				>
+					<Icon name="reply" size={17} />
+					<span class="text-xs">{formatCount(status.replies_count)}</span>
+				</button>
+			{:else}
+				<a
+					href={`/status/${status.id}`}
+					class="flex items-center gap-1.5 text-sm hover:text-ink-strong"
+					title="Antworten"
+				>
+					<Icon name="reply" size={17} />
+					<span class="text-xs">{formatCount(status.replies_count)}</span>
+				</a>
+			{/if}
 
 			<button
 				type="button"

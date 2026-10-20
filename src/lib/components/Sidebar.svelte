@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { session } from '#lib/auth/session.svelte.ts';
+	import { followRequests } from '#lib/stores/followRequests.svelte.ts';
 	import { notificationsFeed } from '#lib/stores/notifications.svelte.ts';
 	import { emojify } from '#lib/utils/text.ts';
 	import Avatar from './Avatar.svelte';
@@ -9,6 +10,11 @@
 	const items = $derived([
 		{ href: '/', label: 'Start', icon: 'home' },
 		{ href: '/notifications', label: 'Meldungen', icon: 'bell' },
+		// Only worth a slot while the profile is private (only then can requests
+		// exist at all) or while some are actually waiting.
+		...(followRequests.pending > 0 || session.account?.locked
+			? [{ href: '/follow_requests', label: 'Anfragen', icon: 'user-plus' }]
+			: []),
 		{ href: '/local', label: 'Lokal', icon: 'globe' },
 		...(session.account
 			? [{ href: `/accounts/${session.account.id}`, label: 'Profil', icon: 'user' }]
@@ -18,6 +24,12 @@
 
 	function isActive(href: string): boolean {
 		return href === '/' ? page.url.pathname === '/' : page.url.pathname.startsWith(href);
+	}
+
+	/** Pending follow requests, shown as a badge on the "Anfragen" entry. */
+	function badge(href: string): number {
+		if (href === '/follow_requests') return followRequests.pending;
+		return 0;
 	}
 
 	const accountName = $derived(
@@ -47,6 +59,12 @@
 					<span
 						class="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-accent ring-2 ring-canvas"
 					></span>
+				{:else if badge(item.href)}
+					<span
+						class="absolute -top-1.5 -right-1.5 min-w-4 rounded-full bg-accent px-1 text-center text-[10px] leading-4 font-bold text-accent-ink ring-2 ring-canvas"
+					>
+						{badge(item.href) > 9 ? '9+' : badge(item.href)}
+					</span>
 				{/if}
 			</span>
 			<span

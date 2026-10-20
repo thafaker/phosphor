@@ -5,16 +5,20 @@
 	import TimelineView from '#lib/components/TimelineView.svelte';
 	import {
 		accountStatuses,
+		blockAccount,
 		followAccount,
 		getAccount,
 		getRelationship,
-		unfollowAccount
+		muteAccount,
+		unblockAccount,
+		unfollowAccount,
+		unmuteAccount
 	} from '#lib/api/gotosocial.ts';
 	import type { Account, Relationship } from '#lib/api/types.ts';
 	import { session } from '#lib/auth/session.svelte.ts';
 	import { TimelineFeed } from '#lib/stores/feed.svelte.ts';
+	import { followRequests } from '#lib/stores/followRequests.svelte.ts';
 	import { followIntent } from '#lib/utils/account.ts';
-
 	type Filter = 'posts' | 'replies' | 'media';
 
 	const tabs: { value: Filter; label: string }[] = [
@@ -29,6 +33,8 @@
 	let error = $state<string | null>(null);
 	let followBusy = $state(false);
 	let followError = $state<string | null>(null);
+	/** Mute / block / follow-request calls. */
+	let moderationBusy = $state(false);
 	let filter = $state<Filter>('posts');
 
 	const isSelf = $derived(Boolean(account && session.account?.id === account.id));
@@ -102,6 +108,73 @@
 			followBusy = false;
 		}
 	}
+
+	/**
+	 * Every moderation call answers with the fresh relationship, so there is no
+	 * follow-up GET — and blocking also drops both follow directions, which the
+	 * returned object already reflects.
+	 */
+	async function moderate(
+		call: (id: string) => Promise<Relationship>,
+		fallback: string
+	): Promise<void> {
+		if (!account || moderationBusy) return;
+		moderationBusy = true;
+		followError = null;
+		try {
+			relationship = await call(account.id);
+		} catch (err) {
+			followError = err instanceof Error ? err.message : fallback;
+		} finally {
+			moderationBusy = false;
+		}
+	}
+
+	async function toggleMute(): Promise<void> {
+		if (!account) return;
+		const muted = relationship?.muting;
+		await moderate(
+			(id) => (muted ? unmuteAccount(id) : muteAccount(id)),
+			'Stummschalten fehlgeschlagen.'
+		);
+	}
+
+	async function toggleBlock(): Promise<void> {
+		if (!account) return;
+		const blocked = relationship?.blocking;
+		await moderate(
+			(id) => (blocked ? unblockAccount(id) : blockAccount(id)),
+			'Blockieren fehlgeschlagen.'
+		);
+	}
+
+	async function acceptRequest(): Promise<void> {
+		if (!account) return;
+		moderationBusy = true;
+		followError = null;
+		try {
+			relationship = await followRequests.acceptAndReturn(account.id);
+		} catch (err) {
+			followError = err instanceof Error ? err.message : 'Anfrage fehlgeschlagen.';
+		} finally {
+			moderationBusy = false;
+		}
+	}
+
+	async function rejectRequest(): Promise<void> {
+		if (!account) return;
+		moderationBusy = true;
+		followError = null;
+		try {
+			await followRequests.reject(account.id);
+			// Without a follow there is no relationship worth showing.
+			relationship = null;
+		} catch (err) {
+			followError = err instanceof Error ? err.message : 'Anfrage fehlgeschlagen.';
+		} finally {
+			moderationBusy = false;
+		}
+	}
 </script>
 
 <header
@@ -134,7 +207,12 @@
 		busy={followBusy}
 		error={followError}
 		{isSelf}
+		moderationBusy
 		onToggleFollow={() => void toggleFollow()}
+		onToggleMute={() => void toggleMute()}
+		onToggleBlock={() => void toggleBlock()}
+		onAcceptRequest={() => void acceptRequest()}
+		onRejectRequest={() => void rejectRequest()}
 	/>
 
 	<nav class="flex border-b border-line" aria-label="Beitragsarten">
