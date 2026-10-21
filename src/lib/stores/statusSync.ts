@@ -1,4 +1,5 @@
 import type { Status } from '#lib/api/types.ts';
+import { refreshEvent } from './refresh.svelte.ts';
 import { homeFeed, localFeed } from './feed.svelte.ts';
 import { notificationsFeed } from './notifications.svelte.ts';
 
@@ -26,4 +27,17 @@ export function applyStatusRemoval(id: string): void {
 	homeFeed.remove(id);
 	localFeed.remove(id);
 	notificationsFeed.removeStatus(id);
+}
+
+/**
+ * Pull anything newer than what the open views already show.
+ *
+ * Used by the app shell for pull-to-refresh; it is the same gap-filling the
+ * resume handler does, so neither scroll position nor pagination is lost.
+ * Failures stay silent — this is a best-effort refresh and the stream (or the
+ * next attempt) picks the data up anyway.
+ */
+export async function refreshViews(): Promise<void> {
+	await Promise.allSettled([homeFeed.loadNew(), localFeed.loadNew(), notificationsFeed.loadNew()]);
+	refreshEvent.request();
 }

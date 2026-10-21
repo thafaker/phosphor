@@ -3,13 +3,16 @@
 	import Avatar from '#lib/components/Avatar.svelte';
 	import Icon from '#lib/components/Icon.svelte';
 	import { followRequests } from '#lib/stores/followRequests.svelte.ts';
+	import { refreshEvent } from '#lib/stores/refresh.svelte.ts';
 	import { absoluteDate } from '#lib/utils/time.ts';
 	import { emojify, withExternalLinks } from '#lib/utils/text.ts';
 
 	// Always re-read on open: a request may have been handled on another device,
-	// and there is no pagination here to preserve.
+	// and there is no pagination here to preserve. Pull-to-refresh triggers the
+	// same reload. `subscribe` returns its own teardown.
 	onMount(() => {
 		void followRequests.load(true);
+		return refreshEvent.subscribe(() => void followRequests.load(true));
 	});
 </script>
 

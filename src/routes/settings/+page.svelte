@@ -7,6 +7,7 @@
 		preferences,
 		TEXT_SCALES,
 		type MotionPreference,
+		type PullToRefreshPreference,
 		type ThemePreference
 	} from '#lib/stores/preferences.svelte.ts';
 
@@ -19,6 +20,12 @@
 	const motionOptions: { value: MotionPreference; label: string; hint: string }[] = [
 		{ value: 'system', label: 'System', hint: 'Der Einstellung deines Geräts folgen' },
 		{ value: 'reduce', label: 'Reduziert', hint: 'Animationen immer minimieren' }
+	];
+
+	const pullOptions: { value: PullToRefreshPreference; label: string; hint: string }[] = [
+		{ value: 'auto', label: 'Automatisch', hint: 'Nur in der installierten App' },
+		{ value: 'always', label: 'Immer', hint: 'Auch im Browser-Tab' },
+		{ value: 'never', label: 'Aus', hint: 'Keine Geste' }
 	];
 
 	const percent = $derived(Math.round(preferences.textScale * 100));
@@ -120,6 +127,48 @@
 			</button>
 		{/each}
 	</div>
+</section>
+
+<section class="border-b border-line px-4 py-5">
+	<h2 class="text-sm font-semibold text-ink-strong">Neu laden per Wischen</h2>
+	<p class="mt-1 text-sm text-ink-soft">
+		Ziehe die Seite am oberen Rand nach unten, um Beiträge und Meldungen zu aktualisieren. Im
+		Browser-Tab macht das normalerweise der Browser selbst — deshalb ist die Geste standardmäßig nur
+		in der zum Home-Bildschirm hinzugefügten App aktiv.
+	</p>
+
+	<div class="mt-4 grid gap-2 sm:grid-cols-3" role="group" aria-label="Neu laden per Wischen">
+		{#each pullOptions as option (option.value)}
+			<button
+				type="button"
+				aria-pressed={preferences.pullToRefresh === option.value}
+				onclick={() => preferences.setPullToRefresh(option.value)}
+				class="rounded-xl border border-line px-3 py-3 text-left transition hover:bg-accent/10 {preferences.pullToRefresh ===
+				option.value
+					? 'border-accent/40 bg-accent/10'
+					: ''}"
+			>
+				<span
+					class="block text-sm font-medium {preferences.pullToRefresh === option.value
+						? 'text-accent'
+						: 'text-ink-strong'}">{option.label}</span
+				>
+				<span class="mt-0.5 block text-xs text-ink-soft">{option.hint}</span>
+			</button>
+		{/each}
+	</div>
+
+	{#if preferences.pullToRefreshEnabled}
+		<p class="mt-3 text-xs text-ink-faint">
+			Aktiv. Zusätzlich laden die Timelines und Meldungen beim Zurückkehren in die App automatisch
+			nach.
+		</p>
+	{:else}
+		<p class="mt-3 text-xs text-ink-faint">
+			Aus. Aktualisiert wird weiterhin automatisch beim Zurückkehren in die App und live über den
+			Stream.
+		</p>
+	{/if}
 </section>
 
 <section class="border-b border-line px-4 py-5">

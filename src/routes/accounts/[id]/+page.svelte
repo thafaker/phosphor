@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import { page } from '$app/state';
 	import AccountHeader from '#lib/components/AccountHeader.svelte';
 	import Icon from '#lib/components/Icon.svelte';
@@ -18,6 +19,7 @@
 	import { session } from '#lib/auth/session.svelte.ts';
 	import { TimelineFeed } from '#lib/stores/feed.svelte.ts';
 	import { followRequests } from '#lib/stores/followRequests.svelte.ts';
+	import { refreshEvent } from '#lib/stores/refresh.svelte.ts';
 	import { followIntent } from '#lib/utils/account.ts';
 	type Filter = 'posts' | 'replies' | 'media';
 
@@ -74,6 +76,30 @@
 		if (!id) return;
 		void load(id);
 	});
+
+	/**
+	 * Pull-to-refresh: re-read the account and, without a spinner, the posts
+	 * that are already on screen.
+	 */
+	onMount(() =>
+		refreshEvent.subscribe(() => {
+			const id = page.params.id;
+			if (!id) return;
+			void (async () => {
+				try {
+					const [fresh, rel] = await Promise.all([
+						getAccount(id),
+						getRelationship(id).catch(() => null)
+					]);
+					account = fresh;
+					relationship = rel;
+				} catch {
+					// best effort
+				}
+				await feed.loadNew();
+			})();
+		})
+	);
 
 	async function load(id: string): Promise<void> {
 		loading = true;

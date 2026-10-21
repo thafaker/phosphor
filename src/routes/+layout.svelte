@@ -6,6 +6,7 @@
 	import favicon from '#lib/assets/favicon.svg';
 	import type { LayoutProps } from './$types';
 	import Icon from '#lib/components/Icon.svelte';
+	import PullToRefresh from '#lib/components/PullToRefresh.svelte';
 	import Sidebar from '#lib/components/Sidebar.svelte';
 	import type { Notification, Status } from '#lib/api/types.ts';
 	import { session } from '#lib/auth/session.svelte.ts';
@@ -13,7 +14,7 @@
 	import { followRequests } from '#lib/stores/followRequests.svelte.ts';
 	import { notificationsFeed } from '#lib/stores/notifications.svelte.ts';
 	import { preferences } from '#lib/stores/preferences.svelte.ts';
-	import { applyStatusRemoval, applyStatusUpdate } from '#lib/stores/statusSync.ts';
+	import { applyStatusRemoval, applyStatusUpdate, refreshViews } from '#lib/stores/statusSync.ts';
 	import { pushStore } from '#lib/push/push.svelte.ts';
 	import { streamer } from '#lib/stores/streamer.svelte.ts';
 
@@ -99,6 +100,19 @@
 		if (grew > 0 && beforeY > 0) window.scrollBy(0, grew);
 	}
 
+	/**
+	 * Pull-to-refresh (see `PullToRefresh.svelte`). Enabled by default only in
+	 * the installed app, where the browser has no reload gesture of its own;
+	 * the setting under "Einstellungen" can force it on or off. Pages that keep
+	 * their own data (thread, profile, follow requests) listen to
+	 * `refreshEvent` — see those views for the pattern.
+	 */
+	async function refreshFromGesture(): Promise<void> {
+		const token = session.token;
+		if (token && session.loggedIn) streamer.ensureConnected(token);
+		await refreshViews();
+	}
+
 	// Keep the WebSocket and feeds in sync with the auth state.
 	$effect(() => {
 		const token = session.token;
@@ -178,6 +192,9 @@
 			{@render children()}
 		</main>
 	</div>
+	{#if preferences.pullToRefreshEnabled}
+		<PullToRefresh onRefresh={refreshFromGesture} />
+	{/if}
 {:else}
 	<div class="flex min-h-dvh items-center justify-center text-ink-faint">
 		<Icon name="refresh" size={24} class="animate-spin" />

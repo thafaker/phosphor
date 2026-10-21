@@ -157,8 +157,9 @@ src/
       feed.svelte.ts          # TimelineFeed-Klasse; homeFeed & localFeed
       notifications.svelte.ts # Meldungen + Unread-Zähler
       followRequests.svelte.ts # offene Folgenanfragen (Liste + Annahme/Ablehnung)
+      refresh.svelte.ts       # Refresh-Bus für „Neu laden“-Geste
       statusSync.ts           # bearbeiteten Status in alle Ansichten spiegeln
-      preferences.svelte.ts   # Theme + Schriftgröße (persistiert)
+      preferences.svelte.ts   # Theme + Schriftgröße + Neu-laden-Geste (persistiert)
     components/
       Icon.svelte             # eigene Inline-SVG-Icons (keine Icon-Dependency)
       Avatar.svelte
@@ -170,6 +171,7 @@ src/
       StatusCard.svelte       # Boost-Wrapper um StatusBody
       Composer.svelte         # Verfassen/Antworten inkl. Anhänge
       ReplyBox.svelte         # aufgeklappte Antwort direkt unter einem Beitrag
+      PullToRefresh.svelte    # Zieh-Geste „neu laden“ am oberen Rand
       Sidebar.svelte          # Navigation (Desktop-Sidebar, mobile Bottom-Bar)
       TimelineView.svelte     # Liste + Infinite Scroll + Zustände
       AccountHeader.svelte    # Profilkopf: Headerbild, Bio, Felder, Zahlen, Aktionen
@@ -183,7 +185,7 @@ src/
     local/+page.svelte        # lokale Timeline
     follow_requests/+page.svelte # offene Folgenanfragen annehmen/ablehnen
     notifications/+page.svelte
-    settings/+page.svelte     # Erscheinungsbild, Schriftgröße & Push-Benachrichtigungen
+    settings/+page.svelte     # Erscheinungsbild, Schriftgröße, Neu-laden-Geste & Push
     status/[id]/+page.svelte  # Thread (Vorfahren + Hauptstatus + Antworten)
     accounts/[id]/+page.svelte # Profil: Kopf, Filter, Beiträge, Folgen/Moderation
 ```
@@ -413,11 +415,39 @@ Sicherheitsnetz verhindert `overflow-x: clip` auf `html`/`body` einen seitlichen
 `scrollWidth > viewport`).
 
 **Persistenz & kein Flackern.** `src/lib/stores/preferences.svelte.ts` hält die Wahl
-(`theme`, `textScale`, `motion`) und spiegelt sie nach `document.documentElement`
+(`theme`, `textScale`, `motion`, `pullToRefresh`) und spiegelt sie nach `document.documentElement`
 (`data-theme`, `data-motion`, `--text-scale`) sowie in das `theme-color`-Meta. Gespeichert wird
 unter `phosphor:prefs:v1`. Damit beim Laden kein heller/dunkler Blitz entsteht, wendet ein
 kurzes Inline-Skript in `app.html` die gespeicherten Werte **vor** dem ersten Paint an; der
 Store hält sich danach synchron.
+
+## Neu laden per Wischen
+
+`PullToRefresh.svelte` sitzt in der App-Hülle (die Geste gilt für das Viewport, nicht für eine
+Liste) und reagiert auf eine Abwärtsbewegung ab dem oberen Rand. Bewusst schlicht gehalten:
+
+- **Nur ab dem oberen Rand.** Start erst ab `scrollY <= 8`; sonst bleibt die Geste normales
+  Scrollen. Nach dem Start wird eine Bewegung abgebrochen, sobald sie aufwärts geht, seitlich
+  dominiert (Verhältnis `|dx| > 1.5·|dy|`) oder die Seite wegscrollt.
+- **Übernahme nur bei eindeutiger Richtung.** Ab 8 px Zug wird die Geste übernommen und
+  `preventDefault()` gerufen, damit weder das Rubber-Banding der Seite noch das native
+  Neuladen des Browsers dazwischenfunkt.
+- **Gedämpft & mit Schwelle.** Der Zug wächst mit `0.5·Weg` (max. 96 px); ab 64 px löst das
+  Loslassen aus. Der Indikator (Pille mit Pfeil, „Ziehen …“ → „Loslassen …“ → „Aktualisiere …“)
+  folgt dem Zug, `prefers-reduced-motion` wird respektiert.
+- **Ein Bus statt direkter Aufrufe.** Weil die Hülle nicht weiß, welche Seite offen ist,
+  signalisiert sie nur `refreshEvent.request()` (`refresh.svelte.ts`). Die Hülle selbst lädt die
+  drei Feeds über `refreshViews()` (`statusSync.ts`, dieselbe Lückenfüllung wie beim Resume —
+  kein Scroll- oder Paginierungsverlust). Thread, Profil und Folgenanfragen registrieren in
+  `onMount` einen Listener über `refreshEvent.subscribe(...)` und lesen ihre eigenen Daten neu
+  (Thread: `getStatus` + `getContext` mit In-Place-Patch; Profil: Account + Relationship +
+  `feed.loadNew()`; Anfragen: `followRequests.load(true)`). Der Bus hält die Listener als
+  einfaches `Set` (kein `$state`/`$effect`), damit sich die Registrierung nicht selbst erneut
+  auslöst.
+- **Standard nur in der installierten App.** Im Browser-Tab gibt es die native Geste schon,
+  deshalb ist die Einstellung `auto` (Standard) nur bei `display-mode: standalone` bzw.
+  `navigator.standalone` aktiv. **Einstellungen → Neu laden per Wischen** erlaubt „Automatisch“,
+  „Immer“ und „Aus“.
 
 **Bewegung.** `prefers-reduced-motion: reduce` wird automatisch respektiert (CSS-Medienabfrage
 in `layout.css`), und `[data-motion='reduce']` erzwingt dasselbe unabhängig vom System. Die

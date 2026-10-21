@@ -5,6 +5,9 @@ export type ThemePreference = 'system' | 'light' | 'dark';
 /** `system` follows the OS `prefers-reduced-motion` setting. */
 export type MotionPreference = 'system' | 'reduce';
 
+/** How a downward drag at the top of a page refreshes it. */
+export type PullToRefreshPreference = 'auto' | 'always' | 'never';
+
 /** Steps for the accessible text-size control (100 % – 200 %). */
 export const TEXT_SCALES = [1, 1.125, 1.25, 1.5, 1.75, 2] as const;
 
@@ -12,9 +15,15 @@ interface Persisted {
 	theme: ThemePreference;
 	textScale: number;
 	motion: MotionPreference;
+	pullToRefresh: PullToRefreshPreference;
 }
 
-const DEFAULTS: Persisted = { theme: 'system', textScale: 1, motion: 'system' };
+const DEFAULTS: Persisted = {
+	theme: 'system',
+	textScale: 1,
+	motion: 'system',
+	pullToRefresh: 'auto'
+};
 
 function load(): Persisted {
 	try {
@@ -28,7 +37,13 @@ function load(): Persisted {
 		const scale = typeof parsed.textScale === 'number' ? parsed.textScale : DEFAULTS.textScale;
 		const motion: MotionPreference =
 			parsed.motion === 'reduce' || parsed.motion === 'system' ? parsed.motion : DEFAULTS.motion;
-		return { theme, textScale: closestScale(scale), motion };
+		const pullToRefresh: PullToRefreshPreference =
+			parsed.pullToRefresh === 'always' ||
+			parsed.pullToRefresh === 'never' ||
+			parsed.pullToRefresh === 'auto'
+				? parsed.pullToRefresh
+				: DEFAULTS.pullToRefresh;
+		return { theme, textScale: closestScale(scale), motion, pullToRefresh };
 	} catch {
 		return { ...DEFAULTS };
 	}
@@ -47,10 +62,21 @@ function resolve(theme: ThemePreference): 'light' | 'dark' {
 	return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
 }
 
+/**
+ * True when the app runs as an installed web app rather than in a browser tab
+ * (Android/Chromium: `display-mode`, iOS/Safari: the legacy `navigator.standalone`).
+ */
+function isStandalone(): boolean {
+	if (typeof window === 'undefined') return false;
+	const legacy = (navigator as Navigator & { standalone?: boolean }).standalone;
+	return window.matchMedia('(display-mode: standalone)').matches || legacy === true;
+}
+
 class Preferences {
 	theme = $state<ThemePreference>(DEFAULTS.theme);
 	textScale = $state<number>(DEFAULTS.textScale);
 	motion = $state<MotionPreference>(DEFAULTS.motion);
+	pullToRefresh = $state<PullToRefreshPreference>(DEFAULTS.pullToRefresh);
 
 	#media: MediaQueryList | null = null;
 
@@ -60,6 +86,7 @@ class Preferences {
 		this.theme = persisted.theme;
 		this.textScale = persisted.textScale;
 		this.motion = persisted.motion;
+		this.pullToRefresh = persisted.pullToRefresh;
 
 		this.#media = window.matchMedia('(prefers-color-scheme: light)');
 		this.#media.addEventListener('change', this.#onSystemChange);
@@ -96,6 +123,23 @@ class Preferences {
 		this.apply();
 	}
 
+	setPullToRefresh(pullToRefresh: PullToRefreshPreference): void {
+		this.pullToRefresh = pullToRefresh;
+		this.persist();
+		this.apply();
+	}
+
+	/**
+	 * Whether dragging down at the top should refresh. `auto` means "only where
+	 * the browser has no pull-to-refresh of its own", i.e. an installed PWA;
+	 * inside a browser tab the native gesture stays untouched.
+	 */
+	get pullToRefreshEnabled(): boolean {
+		if (this.pullToRefresh === 'always') return true;
+		if (this.pullToRefresh === 'never') return false;
+		return isStandalone();
+	}
+
 	increaseText(): void {
 		const next = TEXT_SCALES.find((step) => step > this.textScale);
 		if (next) this.setTextScale(next);
@@ -126,7 +170,12 @@ class Preferences {
 		try {
 			localStorage.setItem(
 				STORAGE_KEY,
-				JSON.stringify({ theme: this.theme, textScale: this.textScale, motion: this.motion })
+				JSON.stringify({
+					theme: this.theme,
+					textScale: this.textScale,
+					motion: this.motion,
+					pullToRefresh: this.pullToRefresh
+				})
 			);
 		} catch {
 			// ignore (e.g. storage disabled)

@@ -8,6 +8,7 @@
 	import StatusCard from '#lib/components/StatusCard.svelte';
 	import { getContext, getStatus } from '#lib/api/gotosocial.ts';
 	import type { Status } from '#lib/api/types.ts';
+	import { refreshEvent } from '#lib/stores/refresh.svelte.ts';
 	import { streamer } from '#lib/stores/streamer.svelte.ts';
 	import {
 		applyThreadRevision,
@@ -53,34 +54,40 @@
 	 * Same idea as the layout's resume refresh, but for this conversation: while
 	 * the app was suspended the socket was dead, so we re-read the thread and
 	 * patch the statuses in place (no spinner, no scroll jump, and an opened CW
-	 * stays open).
+	 * stays open). Pull-to-refresh triggers exactly the same thing.
 	 */
+	async function reRead(): Promise<void> {
+		const id = page.params.id;
+		if (!id || loading) return;
+		try {
+			const [main, context] = await Promise.all([getStatus(id), getContext(id)]);
+			if (!status || status.id !== main.id) return;
+			ancestors = context.ancestors;
+			descendants = context.descendants;
+			mergeStatus(status, main);
+		} catch {
+			// best effort — the stream or the next attempt retries
+		}
+	}
+
 	onMount(() => {
 		let lastRefresh = 0;
 
-		async function refresh(): Promise<void> {
+		function refresh(): void {
 			if (document.visibilityState !== 'visible') return;
-			const id = page.params.id;
-			if (!id || loading) return;
 			const now = Date.now();
 			if (now - lastRefresh < 5000) return;
 			lastRefresh = now;
-
-			try {
-				const [main, context] = await Promise.all([getStatus(id), getContext(id)]);
-				if (!status || status.id !== main.id) return;
-				ancestors = context.ancestors;
-				descendants = context.descendants;
-				mergeStatus(status, main);
-			} catch {
-				// best effort — the stream or the next resume retries
-			}
+			void reRead();
 		}
 
-		const onVisible = () => void refresh();
+		const onVisible = () => refresh();
 		document.addEventListener('visibilitychange', onVisible);
 		window.addEventListener('online', onVisible);
+		// Pull-to-refresh triggers the same reload.
+		const unsubscribe = refreshEvent.subscribe(() => void reRead());
 		return () => {
+			unsubscribe();
 			document.removeEventListener('visibilitychange', onVisible);
 			window.removeEventListener('online', onVisible);
 		};
