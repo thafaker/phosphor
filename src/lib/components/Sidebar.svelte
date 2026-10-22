@@ -9,6 +9,7 @@
 
 	const items = $derived([
 		{ href: '/', label: 'Start', icon: 'home' },
+		{ href: '/search', label: 'Suche', icon: 'search' },
 		{ href: '/notifications', label: 'Meldungen', icon: 'bell' },
 		// Only worth a slot while the profile is private (only then can requests
 		// exist at all) or while some are actually waiting.

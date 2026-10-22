@@ -14,8 +14,11 @@ import type {
 	MediaAttachment,
 	Notification,
 	Relationship,
+	SearchParams,
+	SearchResult,
 	Status,
 	StatusSource,
+	Tag,
 	Visibility
 } from './types';
 export interface TimelineParams {
@@ -96,6 +99,54 @@ export function followAccount(id: string): Promise<Relationship> {
 /** Unfollow an account — also withdraws a pending follow request. */
 export function unfollowAccount(id: string): Promise<Relationship> {
 	return apiRequest<Relationship>(`/api/v1/accounts/${id}/unfollow`, { method: 'POST' });
+}
+
+export function tagTimeline(
+	tag: string,
+	params: TimelineParams & { local?: boolean; remote?: boolean; onlyMedia?: boolean } = {}
+): Promise<Status[]> {
+	return apiRequest<Status[]>(`/api/v1/timelines/tag/${encodeURIComponent(tag)}`, {
+		query: {
+			limit: params.limit ?? 20,
+			max_id: params.maxId,
+			since_id: params.sinceId,
+			local: params.local,
+			remote: params.remote,
+			only_media: params.onlyMedia
+		}
+	});
+}
+
+export { type SearchParams } from './types';
+
+export { type SearchResult } from './types';
+
+export function search(params: SearchParams): Promise<SearchResult> {
+	return apiRequest<SearchResult>('/api/v2/search', {
+		query: {
+			q: params.q,
+			type: params.type,
+			limit: params.limit ?? 20,
+			offset: params.offset,
+			resolve: params.resolve,
+			following: params.following,
+			account_id: params.accountId,
+			max_id: params.maxId,
+			min_id: params.minId
+		}
+	});
+}
+
+export function getHashtag(tag: string): Promise<Tag> {
+	return apiRequest<Tag>(`/api/v1/tags/${encodeURIComponent(tag)}`);
+}
+
+export function followHashtag(tag: string): Promise<Tag> {
+	return apiRequest<Tag>(`/api/v1/tags/${encodeURIComponent(tag)}/follow`, { method: 'POST' });
+}
+
+export function unfollowHashtag(tag: string): Promise<Tag> {
+	return apiRequest<Tag>(`/api/v1/tags/${encodeURIComponent(tag)}/unfollow`, { method: 'POST' });
 }
 
 export function getContext(id: string): Promise<Context> {

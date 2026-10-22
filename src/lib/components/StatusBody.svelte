@@ -49,6 +49,27 @@
 	const name = $derived(status.account.display_name || status.account.username);
 	const nameHtml = $derived(emojify(name, status.account.emojis));
 
+	function linkHashtags(html: string): string {
+		return html
+			.replace(/(<a\b[^>]*>)#([^<]+)(<\/a>)/gi, (_m, open, tag, close) => {
+				if (open.includes('href=')) {
+					return (
+						open.replace(/href="[^"]*"/, `href="/tags/${encodeURIComponent(tag)}"`) +
+						'#' +
+						tag +
+						close
+					);
+				}
+				return `<a href="/tags/${encodeURIComponent(tag)}" class="text-accent hover:underline">#${tag}</a>`;
+			})
+			.replace(
+				/(^|[^"'>\w])#([a-zA-Z][a-zA-Z0-9_]{1,63})(?=[^a-zA-Z0-9_]|$)/g,
+				(m, prefix, tag) => {
+					return `${prefix}<a href="/tags/${encodeURIComponent(tag)}" class="text-accent hover:underline">#${tag}</a>`;
+				}
+			);
+	}
+
 	const visibilityIcon = $derived(
 		status.visibility === 'private' ? 'lock' : status.visibility === 'direct' ? 'at' : 'globe'
 	);
@@ -229,7 +250,7 @@
 				class:text-base={detail}
 			>
 				<!-- GoToSocial returns sanitised HTML here. -->
-				{@html withExternalLinks(status.content)}
+				{@html linkHashtags(withExternalLinks(status.content))}
 			</div>
 
 			<MediaGrid attachments={status.media_attachments} sensitive={status.sensitive} />

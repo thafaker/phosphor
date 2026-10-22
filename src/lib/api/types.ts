@@ -80,6 +80,27 @@ export interface Mention {
 export interface Tag {
 	name: string;
 	url: string;
+	history?: Array<{ day: string; uses: string; accounts: string }>;
+	following?: boolean;
+}
+
+export interface SearchResult {
+	accounts: Account[];
+	statuses: Status[];
+	hashtags: Tag[];
+}
+
+export interface SearchParams {
+	/** Search query. */
+	q: string;
+	type?: 'accounts' | 'hashtags' | 'statuses';
+	limit?: number;
+	offset?: number;
+	resolve?: boolean;
+	following?: boolean;
+	accountId?: string;
+	maxId?: string;
+	minId?: string;
 }
 
 export interface Card {
