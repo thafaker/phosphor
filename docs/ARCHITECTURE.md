@@ -2,11 +2,11 @@
 
 ## Ziel
 
-Eigenes, schnelles und barrierearmes Web-Frontend für eine einzelne GoToSocial-Instanz.
+Eigenes, schnelles und barrierearmes Web-Frontend für GoToSocial-Instanzen.
 Vorbilder sind Pinafore (Svelte, schlank, offline-lesbar) und Phanpy (aufgeräumte Interaktion),
 aber mit zeitgemäßem Stack und besserer Zugänglichkeit.
 
-**Nicht-Ziele (vorerst):** Multi-Instanz-Betrieb, Admin-Panel, Multi-Column-Ansicht.
+**Nicht-Ziele (vorerst):** Admin-Panel, Multi-Column-Ansicht.
 
 ## Grundentscheidung: reines SPA
 
@@ -46,6 +46,24 @@ und ein kleiner Angriffsvektor.
 - Der Token steckt in `src/lib/auth/session.svelte.ts` (Klasse mit `$state`-Feldern).
 - `setTokenGetter()` in `src/lib/api/client.ts` versorgt den API-Client mit dem Token.
 - Logout löscht nur die lokalen Daten (kein Revoke-Aufruf) — bewusst simpel gehalten.
+
+### Instanz-Auswahl
+
+`stores/instance.svelte.ts` hält die gewählte Instanz als `$state`, damit jede Ansicht
+reaktiv mitbekommt, wenn sie sich ändert:
+
+- Die Login-Seite fragt die URL ab, `normalizeInstanceUrl()` (in `utils/instance.ts`)
+  akzeptiert `example.social`, ergänzt fehlendes `https://`, verwirft Pfade/Queries und
+  lehnt fremde Schemata sowie Zugangsdaten in der URL ab.
+- Die Wahl liegt unter `phosphor:instance:v1` und überlebt Logout und Reload. Das ist
+  wichtig, weil sie **vor** dem OAuth-Redirect und beim Callback-Rückweg bekannt sein muss.
+- `VITE_INSTANCE_URL` (Build-Zeit, siehe `.env.example`) füllt die Login-Seite für
+  Installationen vor, die fest an eine Instanz gebunden sind; ohne Vorgabe startet sie leer.
+- Die OAuth-App-Registrierung wird **pro Instanz-Origin** gecacht
+  (`phosphor:oauth-app:v1` ist eine Map `origin → app`), damit ein Instanzwechsel keine
+  falschen Client-Credentials mitschickt. Alte Sessions ohne `instance`-Feld werden über
+  die aktuelle Vorgabe migriert.
+- `client.ts`, `oauth.ts` und `streaming.ts` lesen die URL ausschließlich aus diesem Store.
 
 ## Streaming
 
@@ -163,7 +181,10 @@ GoToSocial 0.22 kennt **kein** „gelesen“ bzw. „verwerfen“ pro Meldung �
 ```
 src/
   lib/
-    config.ts                 # einziger Ort, der die Instanz-URL kennt
+    config.ts                 # App-Name, Scopes, optionaler Instanz-Default (env)
+    instance.svelte.ts        # gewählte Instanz (persistiert, reaktiv)
+    utils/
+      instance.ts             # URL-Normalisierung (Instanz-Eingabe)
     api/
       types.ts                # Mastodon/GtS-Typen (Ausschnitt)
       client.ts               # fetch-Wrapper, Bearer-Token, 429/503-Retry
@@ -541,7 +562,8 @@ Live-Vorschau. `'system'` lauscht auf `prefers-color-scheme` und folgt Änderung
 ✅ Antworten inline (Timeline & Thread), Live-Aktualisierung im Thread,
 ✅ Folgenanfragen annehmen/ablehnen, ✅ Blockieren/Stummschalten aus dem Profil,
 ✅ Suche & Hashtag-Timelines, ✅ Meldungen filtern & einzeln als gelesen markieren,
-✅ expliziter Markdown-/Plaintext-Modus im Composer, ✅ Custom-Emoji-Picker.
+✅ expliziter Markdown-/Plaintext-Modus im Composer, ✅ Custom-Emoji-Picker,
+✅ Instanz-Auswahl beim Login (eine App für beliebige GtS-Instanzen).
 
 ## Nächste Schritte
 
@@ -550,7 +572,5 @@ Live-Vorschau. `'system'` lauscht auf `prefers-color-scheme` und folgt Änderung
 3. **Offline-Cache** (der Service Worker existiert bereits für Push, cached aber bewusst nichts).
 4. **Barrierefreiheit** ausbauen und mit Screenreadern testen (Phanpys bekannte Schwäche).
 5. **i18n**: UI-Strings aus den Komponenten in Sprachdateien ziehen.
-6. **Multi-Instanz**: `INSTANCE_URL` von Konstante zu Session-State machen; Login mit
-   Instanz-Eingabe; App-Registrierung pro Instanz cachen.
-7. **Link-Preview-Cards**: GtS 0.22 liefert `card` nie (kein OpenGraph-Fetch); die Anzeige
+6. **Link-Preview-Cards**: GtS 0.22 liefert `card` nie (kein OpenGraph-Fetch); die Anzeige
    in `StatusBody` ist fertig, bräuchte aber Server-/Proxy-Unterstützung.

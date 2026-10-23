@@ -1,14 +1,12 @@
 /**
- * Phosphor is hard-wired to a single GoToSocial instance for now.
+ * Phosphor is a client for any GoToSocial instance. The user picks the
+ * instance on the login page (stored in `instance.svelte.ts`).
  *
- * This file is the *only* place that should know the server URL. When we
- * eventually support picking an instance at login, we replace this constant
- * with per-session state — everything else can stay the same.
+ * `VITE_INSTANCE_URL` is an optional **build-time default** for operators who
+ * host Phosphor for one specific instance: it prefills the login page and is
+ * used when no instance has been chosen yet.
  */
-export const INSTANCE_URL = 'https://social.janmontag.de';
-
-/** Host without scheme, handy for display ("social.janmontag.de"). */
-export const INSTANCE_HOST = INSTANCE_URL.replace(/^https?:\/\//, '');
+export const DEFAULT_INSTANCE_URL = (import.meta.env.VITE_INSTANCE_URL ?? '').trim();
 
 export const APP_NAME = 'Phosphor';
 export const APP_WEBSITE = 'https://github.com/thafaker/phosphor';

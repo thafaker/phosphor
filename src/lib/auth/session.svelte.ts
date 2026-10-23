@@ -10,6 +10,8 @@ import {
 	DEFAULT_MEDIA_SIZE_LIMIT,
 	SCOPES
 } from '#lib/config.ts';
+import { instance } from '#lib/instance.svelte.ts';
+import { normalizeInstanceUrl } from '#lib/utils/instance.ts';
 
 const STORAGE_KEY = 'phosphor:session:v1';
 const APP_KEY = 'phosphor:oauth-app:v1';
@@ -18,7 +20,11 @@ const STATE_KEY = 'phosphor:oauth-state';
 interface PersistedSession {
 	app: RegisteredApp;
 	token: string;
+	/** Instance the token belongs to. Missing in sessions from before multi-instance. */
+	instance?: string;
 }
+
+type AppCache = Record<string, RegisteredApp>;
 
 function loadPersisted(): PersistedSession | null {
 	try {
@@ -35,22 +41,34 @@ function loadPersisted(): PersistedSession | null {
 /**
  * The OAuth app registration is persisted separately from the session: it must
  * survive the redirect to the instance (and back) *before* we have a token.
+ * Registrations are cached per instance origin.
  */
-function loadApp(): RegisteredApp | null {
+function loadApps(): AppCache {
 	try {
 		const raw = localStorage.getItem(APP_KEY);
-		if (!raw) return null;
-		const app = JSON.parse(raw) as RegisteredApp;
-		if (app?.client_id && app?.client_secret) return app;
+		if (!raw) return {};
+		const parsed = JSON.parse(raw) as AppCache | RegisteredApp;
+		// A single-app object predates multi-instance support; re-register once
+		// rather than risk sending credentials to the wrong instance.
+		if ('client_id' in parsed) return {};
+		return parsed;
 	} catch {
 		// ignore corrupt storage
 	}
-	return null;
+	return {};
 }
 
-function saveApp(app: RegisteredApp): void {
+function loadApp(origin: string): RegisteredApp | null {
+	if (!origin) return null;
+	const app = loadApps()[origin];
+	return app?.client_id && app?.client_secret ? app : null;
+}
+
+function saveApp(origin: string, app: RegisteredApp): void {
 	try {
-		localStorage.setItem(APP_KEY, JSON.stringify(app));
+		const apps = loadApps();
+		apps[origin] = app;
+		localStorage.setItem(APP_KEY, JSON.stringify(apps));
 	} catch {
 		// ignore (e.g. storage disabled)
 	}
@@ -88,7 +106,17 @@ class Session {
 			return;
 		}
 
-		this.app = persisted.app ?? loadApp();
+		// Sessions from before multi-instance support do not carry the instance;
+		// fall back to the configured/prefilled one.
+		const origin = normalizeInstanceUrl(persisted.instance) ?? instance.url;
+		if (!origin) {
+			this.clear();
+			this.ready = true;
+			return;
+		}
+		instance.set(origin);
+
+		this.app = persisted.app;
 		this.token = persisted.token;
 		setTokenGetter(() => this.token);
 
@@ -105,13 +133,18 @@ class Session {
 	/** Kick off the OAuth dance (registers the app on first use). */
 	async beginLogin(): Promise<void> {
 		this.error = null;
+		if (!instance.url) {
+			this.error = 'Bitte gib die URL deiner Instanz an.';
+			return;
+		}
 		try {
+			const origin = instance.url;
 			// Re-register if the cached app predates the current scope set
 			// (e.g. an app created before we added the `push` scope).
-			const cached = this.app ?? loadApp();
+			const cached = loadApp(origin);
 			const app = cached && cached.scopes === SCOPES ? cached : await registerApp();
 			this.app = app;
-			saveApp(app);
+			saveApp(origin, app);
 			const state = crypto.randomUUID();
 			sessionStorage.setItem(STATE_KEY, state);
 			window.location.href = authorizeUrl(app, state);
@@ -130,19 +163,22 @@ class Session {
 			throw new Error('Ungültiger OAuth-State — bitte erneut versuchen.');
 		}
 
-		const app = this.app ?? loadApp() ?? loadPersisted()?.app ?? null;
+		const app = this.app ?? loadApp(instance.url) ?? loadPersisted()?.app ?? null;
 		if (!app) throw new Error('App-Registrierung fehlt — bitte erneut einloggen.');
 
 		const tokenResponse = await exchangeCode(code, app);
 		const token = tokenResponse.access_token;
 		this.app = app;
-		saveApp(app);
+		saveApp(instance.url, app);
 		this.token = token;
 		setTokenGetter(() => this.token);
 		this.account = await verifyCredentials();
 		this.limits = await getInstanceLimits();
 
-		localStorage.setItem(STORAGE_KEY, JSON.stringify({ app, token } satisfies PersistedSession));
+		localStorage.setItem(
+			STORAGE_KEY,
+			JSON.stringify({ app, token, instance: instance.url } satisfies PersistedSession)
+		);
 	}
 
 	logout(): void {

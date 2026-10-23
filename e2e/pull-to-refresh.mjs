@@ -81,7 +81,10 @@ async function swipe(cdp, page, { fromY, toY, steps = 12, x = 200 }) {
 	page.on('pageerror', (err) => console.log('   [pageerror]', String(err).slice(0, 160)));
 	await page.addInitScript(() => {
 		const app = { client_id: 'x', client_secret: 'y', redirect_uri: '', scopes: '' };
-		localStorage.setItem('phosphor:session:v1', JSON.stringify({ app, token: 'test-token' }));
+		localStorage.setItem(
+			'phosphor:session:v1',
+			JSON.stringify({ app, token: 'test-token', instance: 'https://social.janmontag.de' })
+		);
 	});
 
 	// --- Einstellung auf "Immer" stellen ---------------------------------

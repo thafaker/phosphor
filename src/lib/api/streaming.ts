@@ -1,4 +1,4 @@
-import { INSTANCE_URL } from '#lib/config.ts';
+import { instance } from '#lib/instance.svelte.ts';
 
 export interface StreamEvent {
 	stream: string[];
@@ -34,7 +34,7 @@ export class Stream {
 	connect(): void {
 		this.stopped = false;
 
-		const url = new URL('/api/v1/streaming', INSTANCE_URL);
+		const url = new URL('/api/v1/streaming', instance.url);
 		url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
 		url.searchParams.set('access_token', this.token);
 		url.searchParams.set('stream', 'user');

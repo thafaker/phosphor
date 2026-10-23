@@ -1,4 +1,5 @@
-import { APP_NAME, APP_WEBSITE, INSTANCE_URL, REDIRECT_PATH, SCOPES } from '#lib/config.ts';
+import { APP_NAME, APP_WEBSITE, REDIRECT_PATH, SCOPES } from '#lib/config.ts';
+import { instance } from '#lib/instance.svelte.ts';
 import type { TokenResponse } from './types';
 
 export interface RegisteredApp {
@@ -15,7 +16,7 @@ export function redirectUri(): string {
 
 /** Register Phosphor as an OAuth app on the instance (once per session). */
 export async function registerApp(): Promise<RegisteredApp> {
-	const res = await fetch(`${INSTANCE_URL}/api/v1/apps`, {
+	const res = await fetch(`${instance.url}/api/v1/apps`, {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
 		body: JSON.stringify({
@@ -39,12 +40,12 @@ export function authorizeUrl(app: RegisteredApp, state: string): string {
 		scope: SCOPES,
 		state
 	});
-	return `${INSTANCE_URL}/oauth/authorize?${params.toString()}`;
+	return `${instance.url}/oauth/authorize?${params.toString()}`;
 }
 
 /** Exchange the one-time authorization code for a reusable access token. */
 export async function exchangeCode(code: string, app: RegisteredApp): Promise<TokenResponse> {
-	const res = await fetch(`${INSTANCE_URL}/oauth/token`, {
+	const res = await fetch(`${instance.url}/oauth/token`, {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
 		body: JSON.stringify({

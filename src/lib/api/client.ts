@@ -1,4 +1,4 @@
-import { INSTANCE_URL } from '#lib/config.ts';
+import { instance } from '#lib/instance.svelte.ts';
 
 export class ApiError extends Error {
 	readonly status: number;
@@ -40,7 +40,8 @@ export interface RequestOptions {
 }
 
 function buildUrl(path: string, query?: RequestOptions['query']): string {
-	const url = new URL(path, INSTANCE_URL);
+	if (!instance.url) throw new ApiError(0, 'Keine Instanz ausgewählt.');
+	const url = new URL(path, instance.url);
 	if (query) {
 		for (const [key, value] of Object.entries(query)) {
 			if (value !== undefined) url.searchParams.set(key, String(value));

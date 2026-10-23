@@ -13,7 +13,9 @@ TARGET="/var/www/phosphor"
 cd "$(dirname "$0")/.."
 
 echo "→ Build"
-pnpm run build
+# Die produktive Instanz als Vorgabe für die Login-Seite. Cloner setzen die
+# Variable in einer eigenen `.env` (siehe `.env.example`) oder lassen sie leer.
+VITE_INSTANCE_URL="${VITE_INSTANCE_URL:-https://social.janmontag.de}" pnpm run build
 
 echo "→ Zielverzeichnis sicherstellen (${HOST}:${TARGET})"
 ssh -p "${PORT}" "${HOST}" "mkdir -p '${TARGET}'"

@@ -93,7 +93,10 @@ function statusFrom(text, contentType) {
 	}
 	await page.addInitScript(() => {
 		const app = { client_id: 'x', client_secret: 'y', redirect_uri: '', scopes: '' };
-		localStorage.setItem('phosphor:session:v1', JSON.stringify({ app, token: 'test-token' }));
+		localStorage.setItem(
+			'phosphor:session:v1',
+			JSON.stringify({ app, token: 'test-token', instance: 'https://social.janmontag.de' })
+		);
 	});
 
 	await page.goto(BASE, { waitUntil: 'networkidle' });

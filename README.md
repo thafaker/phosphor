@@ -9,11 +9,14 @@ Ein schlankes, schnelles Web-Frontend für [GoToSocial](https://gotosocial.org) 
 
 ## Status
 
-Frühes MVP, aktuell fest auf eine einzige Instanz verdrahtet (`src/lib/config.ts`).
+Frühes MVP. Die GoToSocial-Instanz wird auf der Login-Seite gewählt und lokal
+gespeichert; für eigene Installationen lässt sie sich per `VITE_INSTANCE_URL`
+vorbelegen (siehe `.env.example`).
 
 Bereits dabei:
 
 - OAuth-Login (App-Registrierung → `/oauth/authorize` → `/oauth/token`)
+- Instanz-Auswahl beim Login — eine Installation für beliebige GoToSocial-Instanzen
 - Start-Timeline und lokale Timeline, inkl. Infinite Scroll
 - Live-Streaming über WebSocket (neue Beiträge und Meldungen)
 - Beiträge verfassen (Inhaltswarnung, Sichtbarkeit, Anhänge mit ALT-Text)
@@ -45,14 +48,23 @@ Voraussetzungen: Node ≥ 22.12 (siehe `.nvmrc`) und pnpm.
 
 ```bash
 pnpm install
-# Instanz-URL anpassen:
-#   src/lib/config.ts  ->  INSTANCE_URL
 pnpm dev
 ```
 
-Dann <http://localhost:5173> öffnen und auf „Anmelden“ klicken. Für den Login wird
-ein Konto auf der Zielinstanz benötigt; die App registriert sich pro Origin selbst
-als OAuth-App.
+Dann <http://localhost:5173> öffnen, die Adresse der eigenen GoToSocial-Instanz
+eingeben und auf „Anmelden“ klicken. Die App registriert sich dabei pro Origin
+selbst als OAuth-App.
+
+Für eine Instanz-spezifische Installation (eine Domain, ein Server) lässt sich
+die Instanz vorausfüllen:
+
+```bash
+cp .env.example .env
+# VITE_INSTANCE_URL=https://social.example.org
+pnpm build
+```
+
+Die Login-Seite bleibt änderbar; ohne Vorgabe startet sie leer.
 
 ### Scripts
 

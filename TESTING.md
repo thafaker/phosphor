@@ -7,8 +7,8 @@
 
 **Voraussetzung:** ein vorhandenes Konto. Die Instanz hat Registrierungen und
 Einladungen deaktiviert (`registrations.enabled: false`, `invites_enabled: false`);
-Konten kann nur die Administration anlegen. Wer kein Konto dort hat, testet entweder
-lokal gegen die eigene Instanz (Abschnitt 2) oder lässt sich eines anlegen.
+Konten kann nur die Administration anlegen. Wer kein Konto dort hat, testet
+entweder lokal gegen die eigene Instanz (Abschnitt 2) oder lässt sich eines anlegen.
 
 ## 2. Lokal aus dem Quelltext
 
@@ -21,8 +21,9 @@ pnpm install
 pnpm dev            # http://localhost:5173
 ```
 
-Die App ist fest auf `https://social.janmontag.de` verdrahtet
-(`src/lib/config.ts`). Für eine andere Instanz dort `INSTANCE_URL` ändern.
+Die App fragt beim Start nach der Instanz (`/login`) und merkt sie sich. Für eine
+andere Instanz einfach die URL dort ändern – ein Code-Edit ist nicht nötig.
+Optional lässt sich die Instanz per `VITE_INSTANCE_URL` vorbelegen (`.env.example`).
 
 Der Login funktioniert von jeder Origin aus: Die App registriert sich beim ersten
 Login selbst als OAuth-App, mit `redirect_uri = window.location.origin + '/callback'`.
@@ -72,12 +73,13 @@ BASE=http://127.0.0.1:4174 node e2e/notifications.mjs
 Die E2E-Tests **mocken die komplette API** (`**/api/**`) und melden eine
 Fake-Session an. Sie brauchen weder ein Konto noch Netzwerkzugriff. Abgedeckt sind:
 
-| Datei                 | Prüft                                                           |
-| --------------------- | --------------------------------------------------------------- |
-| `pull-to-refresh.mjs` | Geste: Schwelle, Dämpfung, Scroll-/Seitenabgrenzung, Auslösung  |
-| `notifications.mjs`   | Filter-Tabs, Ungelesen-Zähler, einzeln/alle gelesen, Persistenz |
-| `composer-format.mjs` | Markdown/Plain-Modus, Backslash-Erhalt, Favicon                 |
-| `emoji-picker.mjs`    | Emoji-Suche, Einfügen an der Cursorposition, POST-Body          |
+| Datei                 | Prüft                                                            |
+| --------------------- | ---------------------------------------------------------------- |
+| `pull-to-refresh.mjs` | Geste: Schwelle, Dämpfung, Scroll-/Seitenabgrenzung, Auslösung   |
+| `notifications.mjs`   | Filter-Tabs, Ungelesen-Zähler, einzeln/alle gelesen, Persistenz  |
+| `composer-format.mjs` | Markdown/Plain-Modus, Backslash-Erhalt, Favicon                  |
+| `emoji-picker.mjs`    | Emoji-Suche, Einfügen an der Cursorposition, POST-Body           |
+| `login-instance.mjs`  | Instanz-Eingabe, Normalisierung, OAuth-Registrierung pro Instanz |
 
 ## 4. Was nur manuell geht
 

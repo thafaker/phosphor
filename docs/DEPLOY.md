@@ -44,12 +44,18 @@ oft laufen; alte gehashte Bundles werden entfernt.
 ## Warum das ohne Server-Teil funktioniert
 
 - **CORS:** GtS antwortet mit `access-control-allow-origin: *`, auch beim
-  Preflight für `/oauth/token`. Aufrufe von `phosphor.janmontag.de` sind erlaubt.
+  Preflight für `/oauth/token`. Deshalb funktioniert der direkte Browser-Zugriff
+  auf die Instanz – bei der produktiven Domain genauso wie bei einer beliebigen
+  anderen GtS-Instanz.
 - **OAuth-Redirect:** `redirectUri()` ist `window.location.origin + '/callback'`.
   Die App registriert sich auf der jeweiligen Domain selbst. Login unter
   `phosphor.janmontag.de` und lokal (`localhost:5173`) sind getrennt, weil
   `localStorage` pro Origin isoliert ist.
-- **Streaming:** WebSocket direkt gegen `wss://social.janmontag.de/api/v1/streaming`.
+- **Instanz-Vorgabe:** `scripts/deploy.sh` baut mit
+  `VITE_INSTANCE_URL=https://social.janmontag.de`, damit die Login-Seite dieser
+  Installation vorausgefüllt ist. Cloner setzen die Variable in `.env` oder
+  geben die Instanz auf der Login-Seite ein.
+- **Streaming:** WebSocket direkt gegen `wss://<instanz>/api/v1/streaming`.
 
 ## Caching
 

@@ -70,7 +70,10 @@ function check(name, ok, detail = '') {
 	page.on('pageerror', (err) => console.log('[pageerror]', String(err).slice(0, 200)));
 	await page.addInitScript(() => {
 		const app = { client_id: 'x', client_secret: 'y', redirect_uri: '', scopes: '' };
-		localStorage.setItem('phosphor:session:v1', JSON.stringify({ app, token: 'test-token' }));
+		localStorage.setItem(
+			'phosphor:session:v1',
+			JSON.stringify({ app, token: 'test-token', instance: 'https://social.janmontag.de' })
+		);
 	});
 
 	await page.goto(`${BASE}/notifications`, { waitUntil: 'networkidle' });
