@@ -21,7 +21,11 @@ Bereits dabei:
 - Eigene Beiträge bearbeiten und löschen
 - Thread-Ansicht mit Kontext
 - Profile: Bio, Felder, Zähler, Beiträge und Folgen/Entfolgen
-- Benachrichtigungen
+- Suche (Personen, Hashtags, Beiträge) und Hashtag-Seiten mit Folgen/Entfolgen
+- Benachrichtigungen mit Filtern und lokalem Gelesen-Status
+- Eigene Beiträge bearbeiten und löschen
+- Schreibmodus: Markdown oder Plaintext (explizit umschaltbar)
+- Custom-Emoji-Picker im Composer
 - Push-Benachrichtigungen per Web Push — ohne externen Relay, inkl. neuer Beiträge
   gefolgter Accounts (dort je Account über die „Glocke" aktivierbar)
 - Erscheinungsbild: Hell / Dunkel / System
@@ -37,7 +41,7 @@ Bereits dabei:
 
 ## Entwicklung
 
-Voraussetzungen: Node ≥ 22 und pnpm.
+Voraussetzungen: Node ≥ 22.12 (siehe `.nvmrc`) und pnpm.
 
 ```bash
 pnpm install
@@ -46,19 +50,25 @@ pnpm install
 pnpm dev
 ```
 
-Dann <http://localhost:5173> öffnen und auf „Anmelden“ klicken.
+Dann <http://localhost:5173> öffnen und auf „Anmelden“ klicken. Für den Login wird
+ein Konto auf der Zielinstanz benötigt; die App registriert sich pro Origin selbst
+als OAuth-App.
 
 ### Scripts
 
-| Befehl         | Zweck                          |
-| -------------- | ------------------------------ |
-| `pnpm dev`     | Dev-Server                     |
-| `pnpm build`   | Production-Build nach `build/` |
-| `pnpm preview` | Build lokal ausliefern         |
-| `pnpm check`   | Typecheck (svelte-check)       |
-| `pnpm test`    | Unit-Tests (Vitest)            |
-| `pnpm lint`    | Prettier + ESLint              |
-| `pnpm format`  | Code formatieren               |
+| Befehl          | Zweck                                    |
+| --------------- | ---------------------------------------- |
+| `pnpm dev`      | Dev-Server                               |
+| `pnpm build`    | Production-Build nach `build/`           |
+| `pnpm preview`  | Build lokal ausliefern                   |
+| `pnpm check`    | Typecheck (svelte-check)                 |
+| `pnpm test`     | Unit-Tests (Vitest)                      |
+| `pnpm test:e2e` | Browser-Tests (Playwright, gemockte API) |
+| `pnpm lint`     | Prettier + ESLint                        |
+| `pnpm format`   | Code formatieren                         |
+
+Wie man die App vollständig testet (live, lokal, automatisiert) steht in
+[`TESTING.md`](TESTING.md).
 
 ## Deployment
 
