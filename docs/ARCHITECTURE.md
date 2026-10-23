@@ -136,6 +136,28 @@ Randbedingungen:
   (`internal/surfacing/surfacetimeline.go`: `if !follow.Flags.Notify() { continue }`).
   Boosts und Antworten lösen keinen `status`-Push aus.
 
+## Meldungen: Filter & Gelesen-Status
+
+GoToSocial 0.22 kennt **kein** „gelesen“ bzw. „verwerfen“ pro Meldung — nur
+`POST /api/v1/notifications/clear` für alle. Phosphor führt den Status deshalb lokal:
+
+- **Filter** (Alle, Erwähnungen, Favoriten, Boosts, Folgt, Sonstiges) laufen client-seitig
+  über eine einzige, ungefilterte Liste. Das hält Stream-Einfügungen, Paginierung und
+  Gelesen-Status konsistent; serverseitige Filter würden bei jedem Tabwechsel neu laden.
+  GtS erwartet außerdem `types[]`/`exclude_types[]` als Query-Arrays, nicht `types=…`.
+  „Sonstiges“ ist bewusst der Rest (alles, was in keinen anderen Eimer passt), damit neue
+  Meldungstypen nicht stillschweigend verschwinden.
+- **Gelesen-Status** liegt in `notifications.svelte.ts` und wird unter
+  `phosphor:notifications:read:v1` gespeichert. Er besteht aus einer **Wassermarke**
+  (`readUpTo`: alles bis zu diesem Zeitpunkt ist gelesen, gesetzt auf die neueste geladene
+  Meldung bei „Alle gelesen“) und einer begrenzten Menge einzeln quittierter IDs
+  (max. 500, älteste fallen heraus). Neue Meldungen nach der Wassermarke bleiben ungelesen.
+- **Kein Auto-„alles gelesen“ mehr beim Öffnen.** Stattdessen markiert ein Häkchen an jeder
+  ungelesenen Meldung genau diese, „Alle gelesen“ quittiert den sichtbaren Stand. Die Glocke
+  in der Seitenleiste zählt ungelesene _geladene_ Meldungen; das Layout lädt beim Login eine
+  erste Seite, damit der Punkt auch nach einem Reload stimmt.
+- Ohne Server-Unterstützung ist der Status **pro Browser** und nicht geräteübergreifend.
+
 ## Verzeichnisstruktur
 
 ```
@@ -155,11 +177,11 @@ src/
     stores/
       streamer.svelte.ts      # zentrale Stream-Verteilung
       feed.svelte.ts          # TimelineFeed-Klasse; homeFeed & localFeed
-      notifications.svelte.ts # Meldungen + Unread-Zähler
+      notifications.svelte.ts # Meldungen + Filter + lokaler Gelesen-Status
       followRequests.svelte.ts # offene Folgenanfragen (Liste + Annahme/Ablehnung)
       refresh.svelte.ts       # Refresh-Bus für „Neu laden“-Geste
       statusSync.ts           # bearbeiteten Status in alle Ansichten spiegeln
-      preferences.svelte.ts   # Theme + Schriftgröße + Neu-laden-Geste (persistiert)
+      preferences.svelte.ts   # Theme, Schriftgröße, Gesten, Markdown-Vorgabe (persistiert)
     components/
       Icon.svelte             # eigene Inline-SVG-Icons (keine Icon-Dependency)
       Avatar.svelte
@@ -203,6 +225,25 @@ session.token ──▶ api/client (Bearer) ◀───────────
 
 Aktionen (Favorit, Boost, Merken) werden optimistisch im Store-Objekt gesetzt und bei einem
 API-Fehler zurückgerollt. Da die Stores `$state` verwenden, greifen die Änderungen direkt in der UI.
+
+## Textformat: Markdown & Backslashes
+
+GoToSocial parst Beitragstext standardmäßig **so, wie es das Konto vorgibt**
+(`account.source.status_content_type`, meist `text/plain`, hier `text/markdown`). Phosphor
+sendet den Modus jetzt immer explizit (`content_type` in `postStatus`/`editStatus`), statt
+sich still auf die Kontoeinstellung zu verlassen:
+
+- Der Composer hat einen **MD-Schalter**. Seine Vorgabe ist `auto` (folgt dem Konto);
+  ein Klick setzt dauerhaft `on`/`off` (`preferences.markdown`, gespeichert unter
+  `phosphor:prefs:v1`). Beim Bearbeiten spiegelt der Dialog den Formatmodus des Beitrags
+  (`getStatusSource().content_type`).
+- **Backslashes:** In Markdown maskiert `\` das folgende Sonderzeichen (`\"` → `"`, `\*` → `*`).
+  Das ist gewolltes Markdown-Verhalten, aber unsichtbar, wenn der Modus nicht bekannt ist.
+  Deshalb zeigt der Composer einen Hinweis, sobald ein Backslash im Text steht; für einen
+  sichtbaren Backslash muss `\\` geschrieben werden. Im **Plaintext-Modus** (`text/plain`)
+  bleibt ein Backslash dagegen literal — das behebt den ursprünglichen Bug.
+- Markdown selbst rendert weiterhin der Server (goldmark); Phosphor zeigt das Ergebnis als
+  sanitisiertes HTML. Ein clientseitiger Preview wäre eine spätere Ausbaustufe.
 
 ## Beiträge bearbeiten
 
@@ -477,16 +518,20 @@ Live-Vorschau. `'system'` lauscht auf `prefers-color-scheme` und folgt Änderung
 ✅ Profile (`/accounts/[id]` mit Bio, Beiträgen, Folgen/Entfolgen),
 ✅ Antworten mit sichtbarer @-Erwähnung,
 ✅ Antworten inline (Timeline & Thread), Live-Aktualisierung im Thread,
-✅ Folgenanfragen annehmen/ablehnen, ✅ Blockieren/Stummschalten aus dem Profil.
+✅ Folgenanfragen annehmen/ablehnen, ✅ Blockieren/Stummschalten aus dem Profil,
+✅ Suche & Hashtag-Timelines, ✅ Meldungen filtern & einzeln als gelesen markieren,
+✅ expliziter Markdown-/Plaintext-Modus im Composer.
 
 ## Nächste Schritte
 
-1. **Suche** (`/api/v2/search`) und Hashtag-Timelines.
-2. **Meldungen filtern** (`types=`) und gezielt als gelesen markieren.
-3. **Bilder-Lightbox** und Video-Handling statt „neuer Tab“.
-4. **@-Erwähnungen im Text** zu internen Profillinks auflösen.
-5. **Offline-Cache** (der Service Worker existiert bereits für Push, cached aber bewusst nichts).
-6. **Barrierefreiheit** ausbauen und mit Screenreadern testen (Phanpys bekannte Schwäche).
-7. **i18n**: UI-Strings aus den Komponenten in Sprachdateien ziehen.
-8. **Multi-Instanz**: `INSTANCE_URL` von Konstante zu Session-State machen; Login mit
+1. **Bilder-Lightbox** und Video-Handling statt „neuer Tab“.
+2. **@-Erwähnungen im Text** zu internen Profillinks auflösen.
+3. **Offline-Cache** (der Service Worker existiert bereits für Push, cached aber bewusst nichts).
+4. **Barrierefreiheit** ausbauen und mit Screenreadern testen (Phanpys bekannte Schwäche).
+5. **i18n**: UI-Strings aus den Komponenten in Sprachdateien ziehen.
+6. **Multi-Instanz**: `INSTANCE_URL` von Konstante zu Session-State machen; Login mit
    Instanz-Eingabe; App-Registrierung pro Instanz cachen.
+7. **Custom-Emoji-Picker** im Composer (Anzeige in Beiträgen funktioniert bereits, weil GtS
+   die Shortcodes serverseitig ersetzt).
+8. **Link-Preview-Cards**: GtS 0.22 liefert `card` nie (kein OpenGraph-Fetch); die Anzeige in
+   `StatusBody` ist vorhanden, bräuchte aber Server-/Proxy-Unterstützung.

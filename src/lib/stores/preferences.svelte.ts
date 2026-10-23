@@ -8,6 +8,12 @@ export type MotionPreference = 'system' | 'reduce';
 /** How a downward drag at the top of a page refreshes it. */
 export type PullToRefreshPreference = 'auto' | 'always' | 'never';
 
+/**
+ * Composer text format. `auto` follows the account's server-side default, so
+ * the rendered result matches what the web UI (or another client) would do.
+ */
+export type MarkdownPreference = 'auto' | 'on' | 'off';
+
 /** Steps for the accessible text-size control (100 % – 200 %). */
 export const TEXT_SCALES = [1, 1.125, 1.25, 1.5, 1.75, 2] as const;
 
@@ -16,13 +22,15 @@ interface Persisted {
 	textScale: number;
 	motion: MotionPreference;
 	pullToRefresh: PullToRefreshPreference;
+	markdown: MarkdownPreference;
 }
 
 const DEFAULTS: Persisted = {
 	theme: 'system',
 	textScale: 1,
 	motion: 'system',
-	pullToRefresh: 'auto'
+	pullToRefresh: 'auto',
+	markdown: 'auto'
 };
 
 function load(): Persisted {
@@ -43,7 +51,11 @@ function load(): Persisted {
 			parsed.pullToRefresh === 'auto'
 				? parsed.pullToRefresh
 				: DEFAULTS.pullToRefresh;
-		return { theme, textScale: closestScale(scale), motion, pullToRefresh };
+		const markdown: MarkdownPreference =
+			parsed.markdown === 'on' || parsed.markdown === 'off' || parsed.markdown === 'auto'
+				? parsed.markdown
+				: DEFAULTS.markdown;
+		return { theme, textScale: closestScale(scale), motion, pullToRefresh, markdown };
 	} catch {
 		return { ...DEFAULTS };
 	}
@@ -77,6 +89,7 @@ class Preferences {
 	textScale = $state<number>(DEFAULTS.textScale);
 	motion = $state<MotionPreference>(DEFAULTS.motion);
 	pullToRefresh = $state<PullToRefreshPreference>(DEFAULTS.pullToRefresh);
+	markdown = $state<MarkdownPreference>(DEFAULTS.markdown);
 
 	#media: MediaQueryList | null = null;
 
@@ -87,6 +100,7 @@ class Preferences {
 		this.textScale = persisted.textScale;
 		this.motion = persisted.motion;
 		this.pullToRefresh = persisted.pullToRefresh;
+		this.markdown = persisted.markdown;
 
 		this.#media = window.matchMedia('(prefers-color-scheme: light)');
 		this.#media.addEventListener('change', this.#onSystemChange);
@@ -127,6 +141,11 @@ class Preferences {
 		this.pullToRefresh = pullToRefresh;
 		this.persist();
 		this.apply();
+	}
+
+	setMarkdown(markdown: MarkdownPreference): void {
+		this.markdown = markdown;
+		this.persist();
 	}
 
 	/**
@@ -174,7 +193,8 @@ class Preferences {
 					theme: this.theme,
 					textScale: this.textScale,
 					motion: this.motion,
-					pullToRefresh: this.pullToRefresh
+					pullToRefresh: this.pullToRefresh,
+					markdown: this.markdown
 				})
 			);
 		} catch {

@@ -3,6 +3,7 @@
 	import { postStatus, uploadMedia } from '#lib/api/gotosocial.ts';
 	import type { Status, Visibility } from '#lib/api/types.ts';
 	import { session } from '#lib/auth/session.svelte.ts';
+	import { preferences } from '#lib/stores/preferences.svelte.ts';
 	import {
 		createMediaDraft,
 		revokeMediaDraft,
@@ -32,6 +33,16 @@
 	let text = $state('');
 	let cwEnabled = $state(false);
 	let spoilerText = $state('');
+	/**
+	 * Markdown mode. Seeded once from the account's server-side default, since
+	 * that is what determines how the server would parse a post if we stayed
+	 * silent. The toggle makes it explicit and remembers the choice.
+	 */
+	let markdown = $state(
+		preferences.markdown === 'on' ||
+			(preferences.markdown === 'auto' &&
+				session.account?.source?.status_content_type === 'text/markdown')
+	);
 	// Default to the visibility of the status we're replying to (initial value only).
 	// svelte-ignore state_referenced_locally
 	let visibility = $state<Visibility>(inReplyTo?.visibility ?? 'public');
@@ -42,6 +53,8 @@
 
 	const remaining = $derived(session.maxChars - text.length);
 	const uploading = $derived(drafts.some((draft) => draft.uploading));
+	/** Markdown eats backslashes as escapes; point that out only when relevant. */
+	const showEscapingHint = $derived(markdown && text.includes('\\'));
 	const canSubmit = $derived(
 		(text.trim().length > 0 || drafts.length > 0) &&
 			remaining >= 0 &&
@@ -158,6 +171,16 @@
 		drafts = [];
 	}
 
+	/**
+	 * Flip the text format. An explicit choice is persisted so it survives a
+	 * reload; `auto` (follow the account default) only applies until the first
+	 * toggle.
+	 */
+	function toggleMarkdown(): void {
+		markdown = !markdown;
+		preferences.setMarkdown(markdown ? 'on' : 'off');
+	}
+
 	async function submit() {
 		if (!canSubmit) return;
 		submitting = true;
@@ -173,7 +196,8 @@
 				visibility,
 				inReplyToId: inReplyTo?.id,
 				sensitive,
-				mediaIds: drafts.length ? drafts.map((draft) => draft.id!) : undefined
+				mediaIds: drafts.length ? drafts.map((draft) => draft.id!) : undefined,
+				contentType: markdown ? 'text/markdown' : 'text/plain'
 			});
 			reset();
 			onPosted?.(created);
@@ -229,6 +253,13 @@
 				class="w-full resize-none bg-transparent text-post leading-relaxed text-ink-strong placeholder-ink-faint outline-none"
 			></textarea>
 
+			{#if showEscapingHint}
+				<p class="mt-1 text-xs text-ink-faint">
+					Markdown ist aktiv: <code class="rounded bg-inset px-1">\</code> maskiert Sonderzeichen.
+					Für einen sichtbaren Backslash <code class="rounded bg-inset px-1">\\</code> schreiben.
+				</p>
+			{/if}
+
 			<MediaPicker
 				{drafts}
 				limit={session.limits.maxMediaAttachments}
@@ -251,6 +282,18 @@
 				>
 					<Icon name="alert" size={15} />
 					CW
+				</button>
+
+				<button
+					type="button"
+					class="flex items-center gap-1 rounded-md px-2 py-1 text-xs hover:bg-accent/10 {markdown
+						? 'text-accent'
+						: 'text-ink-soft'}"
+					onclick={toggleMarkdown}
+					title="Markdown-Formatierung {markdown ? 'ausschalten' : 'einschalten'}"
+					aria-pressed={markdown}
+				>
+					<span class="font-mono text-[11px] font-bold">MD</span>
 				</button>
 
 				{#if drafts.length}

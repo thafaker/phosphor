@@ -37,7 +37,30 @@ export interface Account {
 	last_status_at: string | null;
 	emojis: CustomEmoji[];
 	fields: AccountField[];
+	/**
+	 * Only present on `/accounts/verify_credentials`. Carries the account's
+	 * defaults, notably how its posts are parsed (`text/markdown` or
+	 * `text/plain`) — see `StatusContentType`.
+	 */
+	source?: AccountSource;
 }
+
+export interface AccountSource {
+	privacy?: Visibility;
+	sensitive?: boolean;
+	language?: string | null;
+	note?: string;
+	fields?: AccountField[];
+	follow_requests_count?: number;
+	status_content_type?: StatusContentType;
+}
+
+/**
+ * How the server parses submitted post text. `text/plain` keeps a backslash
+ * literal; `text/markdown` treats it as an escape character (`\"` → `"`), so
+ * the composer makes this explicit instead of inheriting it silently.
+ */
+export type StatusContentType = 'text/plain' | 'text/markdown';
 
 /** The viewer's relationship to another account (`/accounts/relationships`). */
 export interface Relationship {
@@ -148,6 +171,8 @@ export interface Status {
 	reblogs_count: number;
 	favourites_count: number;
 	content: string;
+	/** How the server parsed the source text (plain or Markdown). */
+	content_type?: StatusContentType;
 	reblog: Status | null;
 	account: Account;
 	media_attachments: MediaAttachment[];
@@ -197,7 +222,7 @@ export interface StatusSource {
 	id: string;
 	text: string;
 	spoiler_text: string;
-	content_type?: string;
+	content_type?: StatusContentType;
 }
 
 export interface InstanceConfiguration {

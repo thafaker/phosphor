@@ -17,6 +17,7 @@ import type {
 	SearchParams,
 	SearchResult,
 	Status,
+	StatusContentType,
 	StatusSource,
 	Tag,
 	Visibility
@@ -186,6 +187,11 @@ export interface PostStatusInput {
 	language?: string;
 	/** Ids of already-uploaded attachments to include. */
 	mediaIds?: string[];
+	/**
+	 * The server otherwise falls back to the account setting, which may be
+	 * Markdown. Always passing it makes the composer's mode authoritative.
+	 */
+	contentType?: StatusContentType;
 }
 
 export function postStatus(input: PostStatusInput): Promise<Status> {
@@ -198,6 +204,7 @@ export function postStatus(input: PostStatusInput): Promise<Status> {
 			in_reply_to_id: input.inReplyToId,
 			sensitive: input.sensitive,
 			language: input.language,
+			content_type: input.contentType,
 			media_ids: input.mediaIds
 		}
 	});
@@ -252,6 +259,8 @@ export interface EditStatusInput {
 	mediaIds?: string[];
 	/** Likewise, an omitted poll is deleted; resend it to keep it alive. */
 	poll?: { options: string[]; multiple: boolean };
+	/** Keep (or deliberately change) how the text is parsed. */
+	contentType?: StatusContentType;
 }
 
 /**
@@ -266,21 +275,19 @@ export function editStatus(id: string, input: EditStatusInput): Promise<Status> 
 			spoiler_text: input.spoilerText,
 			sensitive: input.sensitive,
 			language: input.language,
+			content_type: input.contentType,
 			media_ids: input.mediaIds,
 			poll: input.poll
 		}
 	});
 }
 
-export function getNotifications(
-	params: TimelineParams & { types?: string[] } = {}
-): Promise<Notification[]> {
+export function getNotifications(params: TimelineParams = {}): Promise<Notification[]> {
 	return apiRequest<Notification[]>('/api/v1/notifications', {
 		query: {
 			limit: params.limit ?? 20,
 			max_id: params.maxId,
-			since_id: params.sinceId,
-			types: params.types?.join(',')
+			since_id: params.sinceId
 		}
 	});
 }

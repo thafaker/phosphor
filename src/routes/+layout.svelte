@@ -3,7 +3,6 @@
 	import { page } from '$app/state';
 	import { onMount, tick } from 'svelte';
 	import './layout.css';
-	import favicon from '#lib/assets/favicon.svg';
 	import type { LayoutProps } from './$types';
 	import Icon from '#lib/components/Icon.svelte';
 	import PullToRefresh from '#lib/components/PullToRefresh.svelte';
@@ -115,10 +114,15 @@
 
 	// Keep the WebSocket and feeds in sync with the auth state.
 	$effect(() => {
+		// Wait for the stored session to be validated: before that, every store
+		// looks logged-out, and resetting here would wipe persisted state (e.g.
+		// the local notification read watermark) on every reload.
+		if (!session.ready) return;
 		const token = session.token;
 		if (token && session.loggedIn) {
 			streamer.connect(token);
 			void homeFeed.load();
+			void notificationsFeed.load();
 			void followRequests.load();
 			// Re-register an existing browser push subscription with the server,
 			// so a token that only later gained the `push` scope still ends up
@@ -173,7 +177,6 @@
 
 <svelte:head>
 	<title>Phosphor</title>
-	<link rel="icon" href={favicon} />
 </svelte:head>
 
 {#if !session.ready}

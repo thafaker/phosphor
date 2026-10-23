@@ -3,6 +3,7 @@
 	import { editStatus, getStatusSource } from '#lib/api/gotosocial.ts';
 	import type { Status } from '#lib/api/types.ts';
 	import { session } from '#lib/auth/session.svelte.ts';
+	import { preferences } from '#lib/stores/preferences.svelte.ts';
 	import { emojify } from '#lib/utils/text.ts';
 	import Avatar from './Avatar.svelte';
 	import Icon from './Icon.svelte';
@@ -22,10 +23,13 @@
 	// actually changed (GtS answers an unchanged edit with a 422).
 	let originalText = '';
 	let originalSpoiler = '';
+	let originalMarkdown = false;
 
 	let text = $state('');
 	let spoilerText = $state('');
 	let cwEnabled = $state(false);
+	/** Seeded from the status' own format once the source is loaded. */
+	let markdown = $state(false);
 	// Seeded once from the status; the dialog is mounted per status.
 	// svelte-ignore state_referenced_locally
 	let sensitive = $state(status.sensitive);
@@ -42,6 +46,7 @@
 	const dirty = $derived(
 		text !== originalText ||
 			(cwEnabled ? spoilerText : '') !== originalSpoiler ||
+			markdown !== originalMarkdown ||
 			sensitive !== status.sensitive
 	);
 	const canSubmit = $derived(
@@ -52,6 +57,7 @@
 			dirty &&
 			!(cwEnabled && !spoilerText.trim())
 	);
+	const showEscapingHint = $derived(markdown && text.includes('\\'));
 
 	// Open as a modal as soon as the element is in the DOM. Native <dialog>
 	// gives us focus handling, Escape-to-close and a real backdrop for free.
@@ -71,6 +77,12 @@
 				cwEnabled = source.spoiler_text.length > 0;
 				originalText = source.text;
 				originalSpoiler = source.spoiler_text;
+				markdown = source.content_type
+					? source.content_type === 'text/markdown'
+					: preferences.markdown === 'on' ||
+						(preferences.markdown === 'auto' &&
+							session.account?.source?.status_content_type === 'text/markdown');
+				originalMarkdown = markdown;
 			} catch (err) {
 				if (!cancelled) {
 					error = err instanceof Error ? err.message : 'Beitrag konnte nicht geladen werden.';
@@ -106,7 +118,8 @@
 							options: status.poll.options.map((option) => option.title),
 							multiple: status.poll.multiple
 						}
-					: undefined
+					: undefined,
+				contentType: markdown ? 'text/markdown' : 'text/plain'
 			});
 			onSaved(updated);
 			dialogEl?.close();
@@ -175,6 +188,13 @@
 				class="w-full resize-y rounded-md border border-line bg-inset px-3 py-2 text-post leading-relaxed text-ink-strong placeholder-ink-faint outline-none focus:border-accent/60"
 				placeholder="Was gibt es Neues?"></textarea>
 
+			{#if showEscapingHint}
+				<p class="text-xs text-ink-faint">
+					Markdown ist aktiv: <code class="rounded bg-inset px-1">\</code> maskiert Sonderzeichen.
+					Für einen sichtbaren Backslash <code class="rounded bg-inset px-1">\\</code> schreiben.
+				</p>
+			{/if}
+
 			<div class="flex flex-wrap items-center gap-2">
 				<button
 					type="button"
@@ -186,6 +206,18 @@
 				>
 					<Icon name="alert" size={15} />
 					CW
+				</button>
+
+				<button
+					type="button"
+					class="flex items-center gap-1 rounded-md px-2 py-1 text-xs hover:bg-accent/10 {markdown
+						? 'text-accent'
+						: 'text-ink-soft'}"
+					onclick={() => (markdown = !markdown)}
+					title="Markdown-Formatierung {markdown ? 'ausschalten' : 'einschalten'}"
+					aria-pressed={markdown}
+				>
+					<span class="font-mono text-[11px] font-bold">MD</span>
 				</button>
 
 				{#if hasMedia}

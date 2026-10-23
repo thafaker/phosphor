@@ -3,9 +3,42 @@ import type { Notification, Status } from '#lib/api/types.ts';
 
 const PAGE_SIZE = 20;
 
-export type NotificationsLoader = (
-	params: TimelineParams & { types?: string[] }
-) => Promise<Notification[]>;
+/**
+ * Read state is kept here rather than on the server: GoToSocial (0.22) only
+ * offers `POST /api/v1/notifications/clear` for *all* notifications, with no
+ * per-notification "read" or "dismiss" endpoint. So we remember locally which
+ * ones the user has acknowledged.
+ *
+ * Two pieces, because they answer different questions:
+ * - `readUpTo` is a timestamp watermark: everything older than the last
+ *   "mark all read" is read. Survives reloads, and does not grow forever.
+ * - `readIds` catches individual notifications acknowledged *below* the
+ *   watermark (newest-first list, so a user can skip the top one).
+ */
+const STORAGE_KEY = 'phosphor:notifications:read:v1';
+/** Upper bound for individually acknowledged ids (oldest fall off). */
+const MAX_READ_IDS = 500;
+
+interface PersistedReadState {
+	readUpTo: string | null;
+	readIds: string[];
+}
+
+function loadReadState(): PersistedReadState {
+	try {
+		const raw = localStorage.getItem(STORAGE_KEY);
+		if (!raw) return { readUpTo: null, readIds: [] };
+		const parsed = JSON.parse(raw) as Partial<PersistedReadState>;
+		return {
+			readUpTo: typeof parsed.readUpTo === 'string' ? parsed.readUpTo : null,
+			readIds: Array.isArray(parsed.readIds)
+				? parsed.readIds.filter((id): id is string => typeof id === 'string')
+				: []
+		};
+	} catch {
+		return { readUpTo: null, readIds: [] };
+	}
+}
 
 function dedupe(notifications: Notification[]): Notification[] {
 	const seen = new Set<string>();
@@ -22,13 +55,40 @@ export class NotificationsFeed {
 	items = $state<Notification[]>([]);
 	loading = $state(false);
 	loaded = $state(false);
-	unread = $state(0);
 	error = $state<string | null>(null);
+
+	/** Everything created at or before this instant counts as read. */
+	#readUpTo = $state<string | null>(null);
+	/** Individually acknowledged ids (below the watermark). */
+	#readIds = $state<string[]>([]);
 
 	/** True while a background "pull newer" refresh is in flight. */
 	private refreshing = false;
 
-	constructor(private readonly loader: NotificationsLoader) {}
+	constructor(private readonly loader: NotificationsLoader) {
+		const persisted = loadReadState();
+		this.#readUpTo = persisted.readUpTo;
+		this.#readIds = persisted.readIds;
+	}
+
+	/**
+	 * Number of loaded notifications the user has not acknowledged yet. Drives
+	 * the dot on the bell; like every other feed count it reflects what has been
+	 * loaded, and grows as more pages arrive.
+	 */
+	get unread(): number {
+		let count = 0;
+		for (const item of this.items) {
+			if (!this.isRead(item)) count += 1;
+		}
+		return count;
+	}
+
+	isRead(notification: Notification): boolean {
+		if (this.#readIds.includes(notification.id)) return true;
+		if (!this.#readUpTo) return false;
+		return notification.created_at <= this.#readUpTo;
+	}
 
 	async load(force = false): Promise<void> {
 		if (this.loading || (this.loaded && !force)) return;
@@ -68,7 +128,6 @@ export class NotificationsFeed {
 	prepend(notification: Notification): void {
 		if (this.items.some((item) => item.id === notification.id)) return;
 		this.items = [notification, ...this.items];
-		this.unread += 1;
 	}
 
 	/** Swap in a freshly loaded copy of the status embedded in any notification. */
@@ -80,8 +139,7 @@ export class NotificationsFeed {
 
 	/**
 	 * Pull anything newer than what we have (see `TimelineFeed.loadNew`). New
-	 * items also bump the unread counter, since they arrived while the stream
-	 * was down. Silent on failure.
+	 * items arrive unread, since they are newer than the watermark.
 	 */
 	async loadNew(): Promise<void> {
 		if (this.refreshing || !this.loaded) return;
@@ -90,9 +148,7 @@ export class NotificationsFeed {
 			const sinceId = this.items[0]?.id;
 			const fresh = await this.loader({ limit: PAGE_SIZE, sinceId });
 			if (fresh.length) {
-				const merged = dedupe([...fresh, ...this.items]);
-				this.unread += merged.length - this.items.length;
-				this.items = merged;
+				this.items = dedupe([...fresh, ...this.items]);
 			}
 		} catch {
 			// handled on the next resume / reconnect
@@ -101,8 +157,36 @@ export class NotificationsFeed {
 		}
 	}
 
+	/** Acknowledge a single notification (e.g. after it was looked at). */
+	markRead(notification: Notification): void {
+		if (this.isRead(notification)) return;
+		this.#readIds = [...this.#readIds, notification.id].slice(-MAX_READ_IDS);
+		this.persist();
+	}
+
+	/**
+	 * Acknowledge everything currently loaded, and everything older. The
+	 * watermark is the newest loaded notification, not the wall clock: anything
+	 * created afterwards (i.e. not yet fetched) stays unread.
+	 */
 	markAllRead(): void {
-		this.unread = 0;
+		this.#readUpTo = this.items[0]?.created_at ?? new Date().toISOString();
+		this.#readIds = [];
+		this.persist();
+	}
+
+	private persist(): void {
+		try {
+			localStorage.setItem(
+				STORAGE_KEY,
+				JSON.stringify({
+					readUpTo: this.#readUpTo,
+					readIds: this.#readIds
+				} satisfies PersistedReadState)
+			);
+		} catch {
+			// ignore (storage disabled)
+		}
 	}
 
 	/** Drop notifications that embed the given (deleted) status. */
@@ -113,9 +197,17 @@ export class NotificationsFeed {
 	reset(): void {
 		this.items = [];
 		this.loaded = false;
-		this.unread = 0;
 		this.error = null;
+		this.#readUpTo = null;
+		this.#readIds = [];
+		try {
+			localStorage.removeItem(STORAGE_KEY);
+		} catch {
+			// ignore
+		}
 	}
 }
+
+export type NotificationsLoader = (params: TimelineParams) => Promise<Notification[]>;
 
 export const notificationsFeed = new NotificationsFeed((params) => getNotifications(params));

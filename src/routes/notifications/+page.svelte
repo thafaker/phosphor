@@ -2,10 +2,36 @@
 	import Avatar from '#lib/components/Avatar.svelte';
 	import Icon from '#lib/components/Icon.svelte';
 	import StatusCard from '#lib/components/StatusCard.svelte';
-	import type { NotificationType } from '#lib/api/types.ts';
+	import type { Notification, NotificationType } from '#lib/api/types.ts';
 	import { notificationsFeed } from '#lib/stores/notifications.svelte.ts';
 	import { emojify } from '#lib/utils/text.ts';
 	import { relativeTime } from '#lib/utils/time.ts';
+
+	type Filter = 'all' | 'mentions' | 'favourites' | 'boosts' | 'follows' | 'other';
+
+	const buckets: { value: Filter; label: string; types: NotificationType[] }[] = [
+		{ value: 'mentions', label: 'Erwähnungen', types: ['mention'] },
+		{ value: 'favourites', label: 'Favoriten', types: ['favourite'] },
+		{ value: 'boosts', label: 'Boosts', types: ['reblog'] },
+		{ value: 'follows', label: 'Folgt', types: ['follow', 'follow_request'] }
+	];
+
+	const known = new Set(buckets.flatMap((bucket) => bucket.types));
+
+	/**
+	 * Filtering happens client-side: GoToSocial expects `types[]` / `exclude_types[]`
+	 * query arrays, and a single feed keeps the stream, pagination, and read state
+	 * consistent across tabs. "Sonstiges" is whatever does not fit the other
+	 * buckets, so new notification types cannot silently disappear.
+	 */
+	const filters: { value: Filter; label: string; match: (item: Notification) => boolean }[] = [
+		{ value: 'all', label: 'Alle', match: () => true },
+		...buckets.map((bucket) => ({
+			...bucket,
+			match: (item: Notification) => bucket.types.includes(item.type)
+		})),
+		{ value: 'other', label: 'Sonstiges', match: (item: Notification) => !known.has(item.type) }
+	];
 
 	const meta: Record<string, { icon: string; label: string }> = {
 		mention: { icon: 'at', label: 'hat dich erwähnt' },
@@ -21,16 +47,26 @@
 		return meta[type] ?? { icon: 'bell', label: 'Neue Aktivität' };
 	}
 
+	let filter = $state<Filter>('all');
 	let sentinel: HTMLDivElement | undefined = $state();
+
+	const current = $derived(filters.find((entry) => entry.value === filter) ?? filters[0]);
+	const visible = $derived(notificationsFeed.items.filter((item) => current.match(item)));
+
+	const unreadTotal = $derived(notificationsFeed.unread);
+
+	function countFor(entry: (typeof filters)[number]): number {
+		return notificationsFeed.items.filter(
+			(item) => entry.match(item) && !notificationsFeed.isRead(item)
+		).length;
+	}
+
+	function markRead(notification: Notification) {
+		notificationsFeed.markRead(notification);
+	}
 
 	$effect(() => {
 		void notificationsFeed.load();
-	});
-
-	// Clear the unread dot while this page is open, including notifications
-	// that arrive over the stream while we are already looking at them.
-	$effect(() => {
-		if (notificationsFeed.items.length) notificationsFeed.markAllRead();
 	});
 
 	$effect(() => {
@@ -47,11 +83,52 @@
 	});
 </script>
 
-<header class="sticky top-0 z-20 border-b border-line bg-canvas/85 px-4 py-3 backdrop-blur">
-	<h1 class="flex items-center gap-2 text-lg font-semibold tracking-tight text-ink-strong">
-		<Icon name="bell" size={18} class="text-accent" />
-		Meldungen
-	</h1>
+<header class="sticky top-0 z-20 border-b border-line bg-canvas/85 backdrop-blur">
+	<div class="flex items-center gap-3 px-4 py-3">
+		<h1 class="flex items-center gap-2 text-lg font-semibold tracking-tight text-ink-strong">
+			<Icon name="bell" size={18} class="text-accent" />
+			Meldungen
+		</h1>
+		{#if unreadTotal > 0}
+			<button
+				type="button"
+				class="ml-auto flex items-center gap-1 rounded-full border border-line px-2.5 py-1 text-xs text-ink-soft transition hover:bg-accent/10 hover:text-ink-strong"
+				onclick={() => notificationsFeed.markAllRead()}
+			>
+				<Icon name="check" size={13} />
+				Alle gelesen
+			</button>
+		{/if}
+	</div>
+
+	<div
+		class="flex gap-2 overflow-x-auto px-4 pb-3 text-sm"
+		role="tablist"
+		aria-label="Meldungen filtern"
+	>
+		{#each filters as entry (entry.value)}
+			{@const unread = countFor(entry)}
+			<button
+				type="button"
+				role="tab"
+				aria-selected={filter === entry.value}
+				class="flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1 transition {filter ===
+				entry.value
+					? 'border-accent/40 bg-accent/10 text-accent'
+					: 'border-line text-ink-soft hover:bg-accent/5 hover:text-ink-strong'}"
+				onclick={() => (filter = entry.value)}
+			>
+				{entry.label}
+				{#if unread > 0}
+					<span
+						class="rounded-full bg-accent px-1.5 text-[calc(10px*var(--text-scale))] leading-4 font-bold text-accent-ink"
+					>
+						{unread > 99 ? '99+' : unread}
+					</span>
+				{/if}
+			</button>
+		{/each}
+	</div>
 </header>
 
 {#if notificationsFeed.error}
@@ -64,18 +141,30 @@
 	<div class="flex justify-center py-10 text-ink-soft">
 		<Icon name="refresh" size={22} class="animate-spin" />
 	</div>
-{:else if !notificationsFeed.items.length && notificationsFeed.loaded}
+{:else if !visible.length && notificationsFeed.loaded}
 	<div class="px-6 py-16 text-center text-ink-faint">
-		<Icon name="bell" size={28} class="mx-auto mb-3 text-ink-soft" />
-		<p>Noch keine Meldungen.</p>
+		<Icon
+			name={filter === 'all' ? 'bell' : 'search'}
+			size={28}
+			class="mx-auto mb-3 text-ink-soft"
+		/>
+		<p>
+			{filter === 'all' ? 'Noch keine Meldungen.' : `Keine Meldungen in „${current.label}“.`}
+		</p>
 	</div>
 {:else}
 	<ul>
-		{#each notificationsFeed.items as notification (notification.id)}
+		{#each visible as notification (notification.id)}
 			{@const info = describe(notification.type)}
 			{@const name = notification.account.display_name || notification.account.username}
-			<li class="border-b border-line">
+			{@const unread = !notificationsFeed.isRead(notification)}
+			<li class="border-b border-line {unread ? 'bg-accent/5' : ''}">
 				<div class="flex items-center gap-3 px-4 pt-3">
+					{#if unread}
+						<span class="h-2 w-2 shrink-0 rounded-full bg-accent" aria-label="Ungelesen"></span>
+					{:else}
+						<span class="h-2 w-2 shrink-0"></span>
+					{/if}
 					<Icon name={info.icon} size={18} class="text-accent" />
 					<div class="min-w-0 flex-1 text-sm text-ink-soft">
 						<a
@@ -92,6 +181,17 @@
 					<span class="text-xs text-ink-faint">
 						{relativeTime(notification.created_at)}
 					</span>
+					{#if unread}
+						<button
+							type="button"
+							class="rounded-md p-1 text-ink-faint transition hover:bg-accent/10 hover:text-accent"
+							title="Als gelesen markieren"
+							aria-label="Als gelesen markieren"
+							onclick={() => markRead(notification)}
+						>
+							<Icon name="check" size={15} />
+						</button>
+					{/if}
 				</div>
 				{#if notification.status}
 					<div class="pr-1 pl-10">

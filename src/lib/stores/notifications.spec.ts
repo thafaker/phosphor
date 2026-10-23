@@ -1,13 +1,32 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Notification, Status } from '#lib/api/types.ts';
 import { NotificationsFeed } from './notifications.svelte.ts';
 
-function notification(id: string): Notification {
-	return { id } as Notification;
+beforeEach(() => {
+	try {
+		localStorage.clear();
+	} catch {
+		// no localStorage in this environment
+	}
+});
+
+function notification(id: string, createdAt = `2026-01-01T00:00:0${id}.000Z`): Notification {
+	return { id, created_at: createdAt } as Notification;
 }
 
-describe('NotificationsFeed.loadNew', () => {
-	it('prepends new notifications and counts them as unread', async () => {
+describe('NotificationsFeed unread state', () => {
+	it('counts freshly loaded notifications as unread until acknowledged', async () => {
+		const loader = vi.fn(async () => [notification('2'), notification('1')]);
+		const feed = new NotificationsFeed(loader);
+
+		await feed.load();
+		expect(feed.unread).toBe(2);
+
+		feed.markAllRead();
+		expect(feed.unread).toBe(0);
+	});
+
+	it('keeps notifications newer than the watermark unread after "mark all read"', async () => {
 		const loader = vi.fn(async ({ sinceId }: { sinceId?: string }) =>
 			sinceId === '2'
 				? [notification('4'), notification('3')]
@@ -16,6 +35,7 @@ describe('NotificationsFeed.loadNew', () => {
 		const feed = new NotificationsFeed(loader);
 
 		await feed.load();
+		feed.markAllRead();
 		expect(feed.unread).toBe(0);
 
 		await feed.loadNew();
@@ -24,13 +44,25 @@ describe('NotificationsFeed.loadNew', () => {
 		expect(feed.unread).toBe(2);
 	});
 
-	it('does not double-count already known notifications', async () => {
-		const loader = vi.fn(async ({ sinceId }: { sinceId?: string }) =>
-			sinceId ? [notification('2'), notification('1')] : [notification('2'), notification('1')]
-		);
+	it('marks a single notification as read', async () => {
+		const loader = vi.fn(async () => [notification('2'), notification('1')]);
 		const feed = new NotificationsFeed(loader);
 
 		await feed.load();
+		expect(feed.unread).toBe(2);
+
+		feed.markRead(feed.items[0]);
+		expect(feed.unread).toBe(1);
+		expect(feed.isRead(feed.items[0])).toBe(true);
+		expect(feed.isRead(feed.items[1])).toBe(false);
+	});
+
+	it('does not double-count already known notifications', async () => {
+		const loader = vi.fn(async () => [notification('2'), notification('1')]);
+		const feed = new NotificationsFeed(loader);
+
+		await feed.load();
+		feed.markAllRead();
 		await feed.loadNew();
 
 		expect(feed.items.map((n) => n.id)).toEqual(['2', '1']);
