@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onDestroy } from 'svelte';
+	import { onDestroy, tick } from 'svelte';
 	import { postStatus, uploadMedia } from '#lib/api/gotosocial.ts';
 	import type { Status, Visibility } from '#lib/api/types.ts';
 	import { session } from '#lib/auth/session.svelte.ts';
@@ -13,6 +13,7 @@
 	import { replyMention } from '#lib/utils/account.ts';
 	import { emojify } from '#lib/utils/text.ts';
 	import Avatar from './Avatar.svelte';
+	import EmojiPicker from './EmojiPicker.svelte';
 	import Icon from './Icon.svelte';
 	import MediaPicker from './MediaPicker.svelte';
 
@@ -50,6 +51,7 @@
 	let drafts = $state<MediaDraft[]>([]);
 	let submitting = $state(false);
 	let error = $state<string | null>(null);
+	let textareaEl = $state<HTMLTextAreaElement | null>(null);
 
 	const remaining = $derived(session.maxChars - text.length);
 	const uploading = $derived(drafts.some((draft) => draft.uploading));
@@ -211,6 +213,27 @@
 	// Object URLs leak memory if the composer goes away with drafts staged.
 	onDestroy(() => drafts.forEach(revokeMediaDraft));
 
+	/**
+	 * Insert a custom emoji shortcode at the caret (or replace the selection),
+	 * then put the caret back after it. `tick` is needed because Svelte updates
+	 * the textarea value only after the state change renders.
+	 */
+	async function insertEmoji(shortcode: string): Promise<void> {
+		const token = `:${shortcode}: `;
+		const element = textareaEl;
+		if (!element) {
+			text += token;
+			return;
+		}
+		const start = element.selectionStart ?? text.length;
+		const end = element.selectionEnd ?? start;
+		text = text.slice(0, start) + token + text.slice(end);
+		await tick();
+		element.focus();
+		const caret = start + token.length;
+		element.setSelectionRange(caret, caret);
+	}
+
 	function onKeydown(event: KeyboardEvent) {
 		if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
 			event.preventDefault();
@@ -245,6 +268,7 @@
 
 			<!-- svelte-ignore a11y_autofocus -->
 			<textarea
+				bind:this={textareaEl}
 				bind:value={text}
 				{placeholder}
 				{autofocus}
@@ -295,6 +319,8 @@
 				>
 					<span class="font-mono text-[11px] font-bold">MD</span>
 				</button>
+
+				<EmojiPicker disabled={submitting} onPick={(shortcode) => void insertEmoji(shortcode)} />
 
 				{#if drafts.length}
 					<button

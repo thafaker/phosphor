@@ -8,6 +8,7 @@ import { apiRequest } from './client';
 import type {
 	Account,
 	Context,
+	CustomEmoji,
 	InstanceLimits,
 	InstanceV1,
 	InstanceV2,
@@ -31,6 +32,11 @@ export interface TimelineParams {
 
 export function verifyCredentials(): Promise<Account> {
 	return apiRequest<Account>('/api/v1/accounts/verify_credentials');
+}
+
+/** Instance-wide custom emojis (`GET /api/v1/custom_emojis`). */
+export function getCustomEmojis(): Promise<CustomEmoji[]> {
+	return apiRequest<CustomEmoji[]>('/api/v1/custom_emojis');
 }
 
 export function homeTimeline(params: TimelineParams = {}): Promise<Status[]> {

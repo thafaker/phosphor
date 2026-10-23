@@ -1,11 +1,12 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, tick } from 'svelte';
 	import { editStatus, getStatusSource } from '#lib/api/gotosocial.ts';
 	import type { Status } from '#lib/api/types.ts';
 	import { session } from '#lib/auth/session.svelte.ts';
 	import { preferences } from '#lib/stores/preferences.svelte.ts';
 	import { emojify } from '#lib/utils/text.ts';
 	import Avatar from './Avatar.svelte';
+	import EmojiPicker from './EmojiPicker.svelte';
 	import Icon from './Icon.svelte';
 
 	interface Props {
@@ -136,6 +137,22 @@
 			void submit();
 		}
 	}
+
+	async function insertEmoji(shortcode: string): Promise<void> {
+		const token = `:${shortcode}: `;
+		const element = textareaEl;
+		if (!element) {
+			text += token;
+			return;
+		}
+		const start = element.selectionStart ?? text.length;
+		const end = element.selectionEnd ?? start;
+		text = text.slice(0, start) + token + text.slice(end);
+		await tick();
+		element.focus();
+		const caret = start + token.length;
+		element.setSelectionRange(caret, caret);
+	}
 </script>
 
 <dialog
@@ -219,6 +236,8 @@
 				>
 					<span class="font-mono text-[11px] font-bold">MD</span>
 				</button>
+
+				<EmojiPicker disabled={submitting} onPick={(shortcode) => void insertEmoji(shortcode)} />
 
 				{#if hasMedia}
 					<button

@@ -180,6 +180,7 @@ src/
       notifications.svelte.ts # Meldungen + Filter + lokaler Gelesen-Status
       followRequests.svelte.ts # offene Folgenanfragen (Liste + Annahme/Ablehnung)
       refresh.svelte.ts       # Refresh-Bus für „Neu laden“-Geste
+      emojis.svelte.ts        # Custom-Emojis der Instanz (lazy, gecacht)
       statusSync.ts           # bearbeiteten Status in alle Ansichten spiegeln
       preferences.svelte.ts   # Theme, Schriftgröße, Gesten, Markdown-Vorgabe (persistiert)
     components/
@@ -187,6 +188,7 @@ src/
       Avatar.svelte
       MediaGrid.svelte        # Anhänge, Sensitive-Blur, ALT-Badge
       MediaPicker.svelte      # Anhänge im Composer: Vorschau, ALT-Text, Entfernen
+      EmojiPicker.svelte      # Custom-Emoji-Auswahl (Suche, Einfügen am Cursor)
       StatusBody.svelte       # eine Statusdarstellung (Inhalt, Aktionen, Umfrage, Card)
       StatusEditor.svelte     # modaler Dialog zum Bearbeiten eigener Beiträge
       ConfirmDialog.svelte    # modaler Bestätigungsdialog (z. B. Löschen, Blockieren)
@@ -225,6 +227,25 @@ session.token ──▶ api/client (Bearer) ◀───────────
 
 Aktionen (Favorit, Boost, Merken) werden optimistisch im Store-Objekt gesetzt und bei einem
 API-Fehler zurückgerollt. Da die Stores `$state` verwenden, greifen die Änderungen direkt in der UI.
+
+## Custom-Emojis
+
+Die Instanz stellt ihre Emojis über `GET /api/v1/custom_emojis` bereit
+(`getCustomEmojis`, gecacht in `stores/emojis.svelte.ts`). `EmojiPicker.svelte` zeigt sie
+lazy in einem Dropdown mit Suche und fügt den Shortcode **an der Cursorposition** ein
+(Auswahl wird ersetzt, danach steht der Cursor hinter dem Emoji). Der Server ersetzt
+`:shortcode:` beim Rendern selbst, deshalb funktioniert die Anzeige in Beiträgen,
+Anzeigenamen und Profilfeldern ohne Zusatzarbeit; `emojify()` deckt die reinen
+Textfelder (Anzeigenamen, Feldnamen) ab.
+
+## Link-Preview-Cards
+
+`StatusBody.svelte` rendert `status.card` bereits vollständig (Bild, Provider, Titel,
+Beschreibung). GoToSocial 0.22 liefert das Feld aber **nie** aus:
+`internal/typeutils/internaltofrontend.go` setzt `Card: nil, // TODO: implement cards`,
+und es gibt keinen OpenGraph-Fetch. Eine Client-Lösung scheitert an CORS (beliebige
+Zielseiten erlauben keinen Browser-Fetch) und würde Nutzer-URLs an Dritte schicken.
+Cards brauchen daher Server-/Proxy-Unterstützung oder eine spätere GtS-Version.
 
 ## Textformat: Markdown & Backslashes
 
@@ -520,7 +541,7 @@ Live-Vorschau. `'system'` lauscht auf `prefers-color-scheme` und folgt Änderung
 ✅ Antworten inline (Timeline & Thread), Live-Aktualisierung im Thread,
 ✅ Folgenanfragen annehmen/ablehnen, ✅ Blockieren/Stummschalten aus dem Profil,
 ✅ Suche & Hashtag-Timelines, ✅ Meldungen filtern & einzeln als gelesen markieren,
-✅ expliziter Markdown-/Plaintext-Modus im Composer.
+✅ expliziter Markdown-/Plaintext-Modus im Composer, ✅ Custom-Emoji-Picker.
 
 ## Nächste Schritte
 
@@ -531,7 +552,5 @@ Live-Vorschau. `'system'` lauscht auf `prefers-color-scheme` und folgt Änderung
 5. **i18n**: UI-Strings aus den Komponenten in Sprachdateien ziehen.
 6. **Multi-Instanz**: `INSTANCE_URL` von Konstante zu Session-State machen; Login mit
    Instanz-Eingabe; App-Registrierung pro Instanz cachen.
-7. **Custom-Emoji-Picker** im Composer (Anzeige in Beiträgen funktioniert bereits, weil GtS
-   die Shortcodes serverseitig ersetzt).
-8. **Link-Preview-Cards**: GtS 0.22 liefert `card` nie (kein OpenGraph-Fetch); die Anzeige in
-   `StatusBody` ist vorhanden, bräuchte aber Server-/Proxy-Unterstützung.
+7. **Link-Preview-Cards**: GtS 0.22 liefert `card` nie (kein OpenGraph-Fetch); die Anzeige
+   in `StatusBody` ist fertig, bräuchte aber Server-/Proxy-Unterstützung.
