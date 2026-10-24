@@ -13,10 +13,13 @@
 	import { session } from '#lib/auth/session.svelte.ts';
 	import { applyStatusRemoval, applyStatusUpdate } from '#lib/stores/statusSync.ts';
 	import { formatCount } from '#lib/utils/format.ts';
+	import { instanceHost } from '#lib/utils/instance.ts';
+	import { originalStatusUrl } from '#lib/utils/status.ts';
 	import { emojify, withExternalLinks } from '#lib/utils/text.ts';
 	import { absoluteTime, relativeTime } from '#lib/utils/time.ts';
 	import Avatar from './Avatar.svelte';
 	import ConfirmDialog from './ConfirmDialog.svelte';
+	import CopyLinkButton from './CopyLinkButton.svelte';
 	import Icon from './Icon.svelte';
 	import MediaGrid from './MediaGrid.svelte';
 	import StatusEditor from './StatusEditor.svelte';
@@ -45,6 +48,13 @@
 
 	/** Only the author may edit a post (GtS enforces it too). */
 	const isOwn = $derived(session.account?.id === status.account.id);
+
+	/**
+	 * The post on the instance that hosts it (for remote posts: the origin
+	 * instance). May be null for the rare remote post without a web permalink.
+	 */
+	const originalUrl = $derived(originalStatusUrl(status));
+	const originalHost = $derived(instanceHost(originalUrl));
 
 	const name = $derived(status.account.display_name || status.account.username);
 	const nameHtml = $derived(emojify(name, status.account.emojis));
@@ -351,15 +361,36 @@
 				<span class="text-xs">{formatCount(status.favourites_count)}</span>
 			</button>
 
-			<button
-				type="button"
-				class="ml-auto flex items-center gap-1.5 text-sm hover:text-accent"
-				class:text-accent={status.bookmarked}
-				onclick={toggleBookmark}
-				title="Merken"
-			>
-				<Icon name="bookmark" size={17} filled={status.bookmarked} />
-			</button>
+			<div class="ml-auto flex items-center gap-3">
+				<button
+					type="button"
+					class="flex items-center gap-1.5 text-sm hover:text-accent"
+					class:text-accent={status.bookmarked}
+					onclick={toggleBookmark}
+					title="Merken"
+				>
+					<Icon name="bookmark" size={17} filled={status.bookmarked} />
+				</button>
+
+				{#if originalUrl}
+					<CopyLinkButton
+						url={originalUrl}
+						label="Link"
+						title={`Link zum Originalbeitrag kopieren (${originalHost})`}
+						class="px-1 py-0.5 text-ink-soft hover:text-ink-strong"
+					/>
+					<a
+						href={originalUrl}
+						target="_blank"
+						rel="noopener noreferrer"
+						title={`Originalbeitrag auf ${originalHost} öffnen`}
+						aria-label={`Originalbeitrag auf ${originalHost} öffnen`}
+						class="rounded-md px-1 py-0.5 text-ink-soft transition hover:bg-accent/10 hover:text-ink-strong"
+					>
+						<Icon name="link-out" size={17} />
+					</a>
+				{/if}
+			</div>
 		</footer>
 	</div>
 

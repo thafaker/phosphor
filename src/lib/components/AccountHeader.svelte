@@ -2,10 +2,12 @@
 	import type { Account, Relationship } from '#lib/api/types.ts';
 	import { followLabel } from '#lib/utils/account.ts';
 	import { formatStat } from '#lib/utils/format.ts';
+	import { instanceHost } from '#lib/utils/instance.ts';
 	import { emojify, withExternalLinks } from '#lib/utils/text.ts';
 	import { absoluteDate } from '#lib/utils/time.ts';
 	import Avatar from './Avatar.svelte';
 	import ConfirmDialog from './ConfirmDialog.svelte';
+	import CopyLinkButton from './CopyLinkButton.svelte';
 	import Icon from './Icon.svelte';
 
 	interface Props {
@@ -44,6 +46,7 @@
 	}: Props = $props();
 
 	const nameHtml = $derived(emojify(account.display_name || account.username, account.emojis));
+	const urlHost = $derived(instanceHost(account.url));
 	const following = $derived(Boolean(relationship?.following || relationship?.requested));
 	const label = $derived(followLabel(relationship));
 
@@ -246,7 +249,19 @@
 			{/if}
 		</div>
 
-		<p class="text-sm text-ink-faint">@{account.acct}</p>
+		<p class="flex items-center gap-1.5 text-sm text-ink-faint">
+			<span>@{account.acct}</span>
+			<a
+				href={account.url}
+				target="_blank"
+				rel="noopener noreferrer"
+				title={`Profil auf ${urlHost} öffnen`}
+				aria-label={`Profil auf ${urlHost} öffnen`}
+				class="rounded p-0.5 transition hover:bg-accent/10 hover:text-ink-strong"
+			>
+				<Icon name="link-out" size={13} />
+			</a>
+		</p>
 
 		{#if account.note}
 			<div class="status-content mt-3 text-post leading-relaxed break-words text-ink">
@@ -290,7 +305,7 @@
 			<p class="mt-2 text-sm text-danger">{error}</p>
 		{/if}
 
-		<p class="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ink-faint">
+		<p class="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-ink-faint">
 			<span>Beigetreten am {absoluteDate(account.created_at)}</span>
 			<a
 				href={account.url}
@@ -299,8 +314,14 @@
 				class="flex items-center gap-1 hover:text-ink-strong"
 			>
 				<Icon name="link-out" size={13} />
-				Originalprofil
+				Auf {urlHost} öffnen
 			</a>
+			<CopyLinkButton
+				url={account.url}
+				label="Profil-Link"
+				title={`Link zum Profil von @${account.acct} kopieren`}
+				class="border border-line px-2 py-1 text-ink-soft hover:text-ink-strong"
+			/>
 		</p>
 	</div>
 

@@ -185,6 +185,8 @@ src/
     instance.svelte.ts        # gewählte Instanz (persistiert, reaktiv)
     utils/
       instance.ts             # URL-Normalisierung (Instanz-Eingabe)
+      status.ts               # kanonische Beitrags-URL (url → uri)
+      clipboard.ts            # Link kopieren inkl. Fallback für HTTP
     api/
       types.ts                # Mastodon/GtS-Typen (Ausschnitt)
       client.ts               # fetch-Wrapper, Bearer-Token, 429/503-Retry
@@ -211,6 +213,7 @@ src/
       MediaPicker.svelte      # Anhänge im Composer: Vorschau, ALT-Text, Entfernen
       EmojiPicker.svelte      # Custom-Emoji-Auswahl (Suche, Einfügen am Cursor)
       StatusBody.svelte       # eine Statusdarstellung (Inhalt, Aktionen, Umfrage, Card)
+      CopyLinkButton.svelte   # Link kopieren mit „Kopiert“-Rückmeldung
       StatusEditor.svelte     # modaler Dialog zum Bearbeiten eigener Beiträge
       ConfirmDialog.svelte    # modaler Bestätigungsdialog (z. B. Löschen, Blockieren)
       StatusCard.svelte       # Boost-Wrapper um StatusBody
@@ -372,7 +375,7 @@ favorisieren und boosten.
 Der Kopf (`components/AccountHeader.svelte`) zeigt Headerbild, Avatar, Anzeigename inkl.
 Custom-Emojis, Handle, Badges (Bot, privat, „Folgt dir“, „Du“), Bio als `{@html}`, Profilfelder
 mit Häkchen bei `verified_at`, die Zähler sowie das Beitrittsdatum und einen Link auf das
-Originalprofil.
+Originalprofil (siehe „Original-Links & Teilen“).
 
 Bio und Feldwerte kommen als HTML an (dieselbe Konvention wie bei Mastodon, das sie ebenfalls
 clientseitig rendert); Feldnamen laufen zusätzlich durch `emojify`, weil sie Custom-Emojis als
@@ -402,6 +405,31 @@ aus der Liste.
 - `src/lib/utils/thread.ts` bündelt die reine Logik (`insertReply`, `applyThreadRevision`,
   `mergeStatus`, `removeFromThread`), damit sie ohne Svelte testbar bleibt
   (`thread.spec.ts`).
+
+## Original-Links & Teilen
+
+Phosphor bleibt der Ort, an dem man liest und interagiert. Für manches braucht man aber die
+Seite der Instanz, die einen Beitrag oder ein Profil tatsächlich hostet — zum Teilen, für
+Vorschauen/Embeds, Meldewege oder Einstellungen. Deshalb gibt es direkte Links, ohne die App
+zu verlassen zu müssen:
+
+- **Profil:** Das Link-Symbol am Handle und „Auf \<host\> öffnen“ führen zu `account.url`.
+  Bei entfernten Konten ist das die Heimatinstanz, bei lokalen die eigene. „Profil-Link“
+  kopiert die URL in die Zwischenablage.
+- **Beitrag:** Das externe Link-Symbol in der Fußzeile öffnet `status.url`; „Link“ kopiert
+  die kanonische URL. Bei Boosts zeigt beides auf den Originalbeitrag, nicht auf den
+  Boost-Wrapper (`StatusCard` reicht den effektiven Status weiter).
+- `utils/status.ts#originalStatusUrl()` bevorzugt `status.url` und fällt auf `status.uri`
+  zurück, weil manche entfernten Implementierungen `url` weglassen (GtS selbst liefert für
+  entfernte Beiträge die URL der Herkunftsinstanz). Akzeptiert werden nur `http(s)`-URLs;
+  fehlt beides, werden die Links ausgeblendet.
+- Das Kopieren läuft über `utils/clipboard.ts` (Clipboard-API mit `textarea`-Fallback für
+  HTTP-Origins). `components/CopyLinkButton.svelte` zeigt zwei Sekunden „Kopiert“ und
+  meldet Erfolg/Fehler per `aria-live`.
+
+Ein echtes `<iframe>`-Embed bietet GoToSocial 0.22 nicht: Es gibt weder `/embed` noch
+oEmbed (Feature-Request #5000). Der kopierte Link ist aber genau die kanonische URL, die
+Mastodon-kompatible Embed-Consumer und Link-Vorschauen verwenden.
 
 ## Antworten im Thread und in Timelines
 
@@ -563,7 +591,8 @@ Live-Vorschau. `'system'` lauscht auf `prefers-color-scheme` und folgt Änderung
 ✅ Folgenanfragen annehmen/ablehnen, ✅ Blockieren/Stummschalten aus dem Profil,
 ✅ Suche & Hashtag-Timelines, ✅ Meldungen filtern & einzeln als gelesen markieren,
 ✅ expliziter Markdown-/Plaintext-Modus im Composer, ✅ Custom-Emoji-Picker,
-✅ Instanz-Auswahl beim Login (eine App für beliebige GtS-Instanzen).
+✅ Instanz-Auswahl beim Login (eine App für beliebige GtS-Instanzen),
+✅ Originalprofil/-beitrag öffnen und Link kopieren (Teilen/Embedden).
 
 ## Nächste Schritte
 

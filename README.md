@@ -24,9 +24,9 @@ Bereits dabei:
 - Eigene Beiträge bearbeiten und löschen
 - Thread-Ansicht mit Kontext
 - Profile: Bio, Felder, Zähler, Beiträge und Folgen/Entfolgen
+- Original-Links: Profil oder Beitrag auf der Herkunftsinstanz öffnen und Link kopieren
 - Suche (Personen, Hashtags, Beiträge) und Hashtag-Seiten mit Folgen/Entfolgen
 - Benachrichtigungen mit Filtern und lokalem Gelesen-Status
-- Eigene Beiträge bearbeiten und löschen
 - Schreibmodus: Markdown oder Plaintext (explizit umschaltbar)
 - Custom-Emoji-Picker im Composer
 - Push-Benachrichtigungen per Web Push — ohne externen Relay, inkl. neuer Beiträge

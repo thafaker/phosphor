@@ -80,6 +80,7 @@ Fake-Session an. Sie brauchen weder ein Konto noch Netzwerkzugriff. Abgedeckt si
 | `composer-format.mjs` | Markdown/Plain-Modus, Backslash-Erhalt, Favicon                  |
 | `emoji-picker.mjs`    | Emoji-Suche, Einfügen an der Cursorposition, POST-Body           |
 | `login-instance.mjs`  | Instanz-Eingabe, Normalisierung, OAuth-Registrierung pro Instanz |
+| `original-links.mjs`  | Originalprofil/-beitrag öffnen, Link kopieren (Teilen/Embedden)  |
 
 ## 4. Was nur manuell geht
 
@@ -103,5 +104,6 @@ Eine kurze manuelle Checkliste für einen Testdurchgang:
 6. Suche (Personen, Hashtags, Beiträge), Hashtag öffnen und folgen/entfolgen.
 7. Composer: MD an/aus, Backslash-Hinweis, Custom-Emoji einfügen.
 8. Profil öffnen, folgen/entfolgen, stummschalten/blockieren.
-9. Einstellungen: Theme, Schriftgröße, reduzierte Bewegung, Pull-to-Refresh (PWA).
-10. Push aktivieren und in einem zweiten Account eine Erwähnung auslösen.
+9. Originalprofil und Originalbeitrag öffnen (neuer Tab), beide Links kopieren.
+10. Einstellungen: Theme, Schriftgröße, reduzierte Bewegung, Pull-to-Refresh (PWA).
+11. Push aktivieren und in einem zweiten Account eine Erwähnung auslösen.
