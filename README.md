@@ -13,28 +13,43 @@ Frühes MVP. Die GoToSocial-Instanz wird auf der Login-Seite gewählt und lokal
 gespeichert; für eigene Installationen lässt sie sich per `VITE_INSTANCE_URL`
 vorbelegen (siehe `.env.example`).
 
-Bereits dabei:
+## Roadmap
 
-- OAuth-Login (App-Registrierung → `/oauth/authorize` → `/oauth/token`)
-- Instanz-Auswahl beim Login — eine Installation für beliebige GoToSocial-Instanzen
-- Start-Timeline und lokale Timeline, inkl. Infinite Scroll
-- Live-Streaming über WebSocket (neue Beiträge und Meldungen)
-- Beiträge verfassen (Inhaltswarnung, Sichtbarkeit, Anhänge mit ALT-Text)
-- Favorisieren, Boosten, Merken
-- Eigene Beiträge bearbeiten und löschen
-- Thread-Ansicht mit Kontext
-- Profile: Bio, Felder, Zähler, Beiträge und Folgen/Entfolgen
-- Original-Links: Profil oder Beitrag auf der Herkunftsinstanz öffnen und Link kopieren
-- Erwähnungen im Beitragstext öffnen direkt das Profil in Phosphor
-- Suche (Personen, Hashtags, Beiträge) und Hashtag-Seiten mit Folgen/Entfolgen
-- Benachrichtigungen mit Filtern und lokalem Gelesen-Status
-- Schreibmodus: Markdown oder Plaintext (explizit umschaltbar)
-- Custom-Emoji-Picker im Composer
-- Push-Benachrichtigungen per Web Push — ohne externen Relay, inkl. neuer Beiträge
-  gefolgter Accounts (dort je Account über die „Glocke" aktivierbar)
-- Erscheinungsbild: Hell / Dunkel / System
-- Barrierefreie Schriftgröße (100 % – 200 %), wirkt auf die ganze App
-- Installierbar als App (PWA-Manifest + Icons) für den Home-Bildschirm
+### Erledigt
+
+- [x] OAuth-Login (App-Registrierung → `/oauth/authorize` → `/oauth/token`)
+- [x] Instanz-Auswahl beim Login — eine Installation für beliebige GoToSocial-Instanzen
+- [x] Start-Timeline und lokale Timeline, inkl. Infinite Scroll
+- [x] Live-Streaming über WebSocket (neue Beiträge und Meldungen)
+- [x] Beiträge verfassen: Inhaltswarnung, Sichtbarkeit, Anhänge mit ALT-Text
+- [x] Schreibmodus: Markdown oder Plaintext (explizit umschaltbar)
+- [x] Custom-Emoji-Picker im Composer
+- [x] Favorisieren, Boosten, Merken
+- [x] Eigene Beiträge bearbeiten und löschen
+- [x] Thread-Ansicht mit Kontext und Inline-Antworten
+- [x] Antworten mit sichtbarer @-Erwähnung
+- [x] Profile: Bio, Felder, Zähler, Beiträge und Folgen/Entfolgen
+- [x] Folgenanfragen annehmen und ablehnen
+- [x] Blockieren und Stummschalten aus dem Profil
+- [x] Originalprofil oder Originalbeitrag öffnen und Link kopieren
+- [x] Erwähnungen im Beitragstext intern auf Profile verlinken
+- [x] Suche (Personen, Hashtags, Beiträge) und Hashtag-Seiten
+- [x] Benachrichtigungen mit Filtern und lokalem Gelesen-Status
+- [x] Push-Benachrichtigungen per Web Push — ohne externen Relay, inkl. neuer Beiträge
+      gefolgter Accounts (dort je Account über die „Glocke“ aktivierbar)
+- [x] Erscheinungsbild: Hell / Dunkel / System
+- [x] Barrierefreie Schriftgröße (100 % – 200 %), wirkt auf die ganze App
+- [x] Reduzierte Bewegung (Systemeinstellung oder erzwungen)
+- [x] Installierbar als App (PWA-Manifest + Icons) für den Home-Bildschirm
+
+### Als Nächstes
+
+- [ ] Bilder-Lightbox und Video-Handling statt „neuer Tab“
+- [ ] Offline-Cache (der Service Worker existiert bereits für Push, cached aber bewusst nichts)
+- [ ] Barrierefreiheit ausbauen und mit Screenreadern testen
+- [ ] i18n: UI-Strings aus den Komponenten in Sprachdateien ziehen
+- [ ] Link-Preview-Cards — blockiert: GtS 0.22 liefert `card` nie (kein OpenGraph-Fetch);
+      die Anzeige in `StatusBody` ist fertig, bräuchte aber Server-/Proxy-Unterstützung
 
 ## Stack
 
