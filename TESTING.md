@@ -81,6 +81,7 @@ Fake-Session an. Sie brauchen weder ein Konto noch Netzwerkzugriff. Abgedeckt si
 | `emoji-picker.mjs`    | Emoji-Suche, Einfügen an der Cursorposition, POST-Body           |
 | `login-instance.mjs`  | Instanz-Eingabe, Normalisierung, OAuth-Registrierung pro Instanz |
 | `original-links.mjs`  | Originalprofil/-beitrag öffnen, Link kopieren (Teilen/Embedden)  |
+| `mentions.mjs`        | Erwähnungen intern verlinken; unbekannte bleiben extern          |
 
 ## 4. Was nur manuell geht
 
@@ -105,5 +106,6 @@ Eine kurze manuelle Checkliste für einen Testdurchgang:
 7. Composer: MD an/aus, Backslash-Hinweis, Custom-Emoji einfügen.
 8. Profil öffnen, folgen/entfolgen, stummschalten/blockieren.
 9. Originalprofil und Originalbeitrag öffnen (neuer Tab), beide Links kopieren.
-10. Einstellungen: Theme, Schriftgröße, reduzierte Bewegung, Pull-to-Refresh (PWA).
-11. Push aktivieren und in einem zweiten Account eine Erwähnung auslösen.
+10. Erwähnung im Beitrag anklicken: Profil öffnet sich in Phosphor; unbekannte Erwähnung extern.
+11. Einstellungen: Theme, Schriftgröße, reduzierte Bewegung, Pull-to-Refresh (PWA).
+12. Push aktivieren und in einem zweiten Account eine Erwähnung auslösen.

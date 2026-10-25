@@ -25,6 +25,7 @@ Bereits dabei:
 - Thread-Ansicht mit Kontext
 - Profile: Bio, Felder, Zähler, Beiträge und Folgen/Entfolgen
 - Original-Links: Profil oder Beitrag auf der Herkunftsinstanz öffnen und Link kopieren
+- Erwähnungen im Beitragstext öffnen direkt das Profil in Phosphor
 - Suche (Personen, Hashtags, Beiträge) und Hashtag-Seiten mit Folgen/Entfolgen
 - Benachrichtigungen mit Filtern und lokalem Gelesen-Status
 - Schreibmodus: Markdown oder Plaintext (explizit umschaltbar)

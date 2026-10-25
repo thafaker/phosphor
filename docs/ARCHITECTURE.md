@@ -364,6 +364,23 @@ selbst eine Meldung beschert. Ein Entwurf, der mit auf ein anderes Ziel wechselt
 Handle umadressiert; nach dem Posten bleibt der Composer in der Antwort-Modus und stellt den
 Handle erneut bereit.
 
+### Erwähnungen im Beitragstext
+
+GoToSocial liefert Erwähnungen als Anchors mit `class="mention"` und der Profil-URL der
+Herkunftsinstanz. Damit man beim Lesen in Phosphor bleibt, schreibt `utils/text.ts#linkMentions()`
+sie auf `/accounts/{id}` um. Die Zuordnung kommt aus `status.mentions`: zuerst über die
+kanonische `mention.url` (abschließender Schrägstrich wird ignoriert), sonst über den sichtbaren
+`@acct`-Text oder – wenn GtS nur `@<span>username</span>` ohne Domain rendert – über
+`username@host` aus der Anchor-URL. Der Fallback ist nötig, weil die URL im Anchor auf die ferne
+Instanz zeigen kann, während `status.mentions[].url` auf die eigene Kopie verweist. Hashtags
+tragen in GtS ebenfalls `class="mention hashtag"`; sie werden ausdrücklich ausgenommen.
+
+Unbekannte Erwähnungen (nicht in `status.mentions`) bleiben unangetastet und öffnen wie bisher
+die Herkunftsinstanz in einem neuen Tab. Die Render-Reihenfolge in `StatusBody` ist deshalb:
+`linkMentions()` → `linkHashtags()` → `withExternalLinks()`. `withExternalLinks()` annotiert nur
+noch absolute `http(s)`-Links ohne vorhandenes `target`; relative Ziele wie `/accounts/…` werden
+nicht angefasst.
+
 ## Profile
 
 Jeder Account ist unter `/accounts/[id]` erreichbar. Der Weg dorthin führt über Avatar und
@@ -592,14 +609,14 @@ Live-Vorschau. `'system'` lauscht auf `prefers-color-scheme` und folgt Änderung
 ✅ Suche & Hashtag-Timelines, ✅ Meldungen filtern & einzeln als gelesen markieren,
 ✅ expliziter Markdown-/Plaintext-Modus im Composer, ✅ Custom-Emoji-Picker,
 ✅ Instanz-Auswahl beim Login (eine App für beliebige GtS-Instanzen),
-✅ Originalprofil/-beitrag öffnen und Link kopieren (Teilen/Embedden).
+✅ Originalprofil/-beitrag öffnen und Link kopieren (Teilen/Embedden),
+✅ Erwähnungen im Beitragstext als interne Profillinks.
 
 ## Nächste Schritte
 
 1. **Bilder-Lightbox** und Video-Handling statt „neuer Tab“.
-2. **@-Erwähnungen im Text** zu internen Profillinks auflösen.
-3. **Offline-Cache** (der Service Worker existiert bereits für Push, cached aber bewusst nichts).
-4. **Barrierefreiheit** ausbauen und mit Screenreadern testen (Phanpys bekannte Schwäche).
-5. **i18n**: UI-Strings aus den Komponenten in Sprachdateien ziehen.
-6. **Link-Preview-Cards**: GtS 0.22 liefert `card` nie (kein OpenGraph-Fetch); die Anzeige
+2. **Offline-Cache** (der Service Worker existiert bereits für Push, cached aber bewusst nichts).
+3. **Barrierefreiheit** ausbauen und mit Screenreadern testen (Phanpys bekannte Schwäche).
+4. **i18n**: UI-Strings aus den Komponenten in Sprachdateien ziehen.
+5. **Link-Preview-Cards**: GtS 0.22 liefert `card` nie (kein OpenGraph-Fetch); die Anzeige
    in `StatusBody` ist fertig, bräuchte aber Server-/Proxy-Unterstützung.
