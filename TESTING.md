@@ -73,15 +73,16 @@ BASE=http://127.0.0.1:4174 node e2e/notifications.mjs
 Die E2E-Tests **mocken die komplette API** (`**/api/**`) und melden eine
 Fake-Session an. Sie brauchen weder ein Konto noch Netzwerkzugriff. Abgedeckt sind:
 
-| Datei                 | Prüft                                                            |
-| --------------------- | ---------------------------------------------------------------- |
-| `pull-to-refresh.mjs` | Geste: Schwelle, Dämpfung, Scroll-/Seitenabgrenzung, Auslösung   |
-| `notifications.mjs`   | Filter-Tabs, Ungelesen-Zähler, einzeln/alle gelesen, Persistenz  |
-| `composer-format.mjs` | Markdown/Plain-Modus, Backslash-Erhalt, Favicon                  |
-| `emoji-picker.mjs`    | Emoji-Suche, Einfügen an der Cursorposition, POST-Body           |
-| `login-instance.mjs`  | Instanz-Eingabe, Normalisierung, OAuth-Registrierung pro Instanz |
-| `original-links.mjs`  | Originalprofil/-beitrag öffnen, Link kopieren (Teilen/Embedden)  |
-| `mentions.mjs`        | Erwähnungen intern verlinken; unbekannte bleiben extern          |
+| Datei                  | Prüft                                                                   |
+| ---------------------- | ----------------------------------------------------------------------- |
+| `pull-to-refresh.mjs`  | Geste: Schwelle, Dämpfung, Scroll-/Seitenabgrenzung, Auslösung          |
+| `notifications.mjs`    | Filter-Tabs, Ungelesen-Zähler, einzeln/alle gelesen, Persistenz         |
+| `stream-buffering.mjs` | Stream-Puffer: Scrollposition, Hinweis, Einfügen bei Timeline/Meldungen |
+| `composer-format.mjs`  | Markdown/Plain-Modus, Backslash-Erhalt, Favicon                         |
+| `emoji-picker.mjs`     | Emoji-Suche, Einfügen an der Cursorposition, POST-Body                  |
+| `login-instance.mjs`   | Instanz-Eingabe, Normalisierung, OAuth-Registrierung pro Instanz        |
+| `original-links.mjs`   | Originalprofil/-beitrag öffnen, Link kopieren (Teilen/Embedden)         |
+| `mentions.mjs`         | Erwähnungen intern verlinken; unbekannte bleiben extern                 |
 
 ## 4. Was nur manuell geht
 
@@ -98,10 +99,12 @@ Eine kurze manuelle Checkliste für einen Testdurchgang:
 
 1. Login, App neu laden (Session bleibt), Logout und erneuter Login.
 2. Start-/Lokal-Timeline scrollen; neuen Beitrag in einem zweiten Tab posten
-   (Streaming); App in den Hintergrund schicken und zurückholen (Lückenfüllung).
+   (Streaming): Position bleibt stehen, Hinweis „neue Beiträge“ erscheint, Klick springt
+   nach oben. App in den Hintergrund schicken und zurückholen (Lückenfüllung).
 3. Beitrag mit CW, Sichtbarkeit, zwei Anhängen inkl. ALT-Text posten, bearbeiten, löschen.
 4. Favorisieren, boosten, merken; Antwort mit sichtbarer Erwähnung.
-5. Meldungen: Filter, einzeln als gelesen markieren, „Alle gelesen“, Reload.
+5. Meldungen: Filter, einzeln als gelesen markieren, „Alle gelesen“, Reload; neue Meldung
+   bei gescrollter Liste puffert ebenfalls, statt zu springen.
 6. Suche (Personen, Hashtags, Beiträge), Hashtag öffnen und folgen/entfolgen.
 7. Composer: MD an/aus, Backslash-Hinweis, Custom-Emoji einfügen.
 8. Profil öffnen, folgen/entfolgen, stummschalten/blockieren.

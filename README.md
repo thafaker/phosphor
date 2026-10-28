@@ -21,6 +21,7 @@ vorbelegen (siehe `.env.example`).
 - [x] Instanz-Auswahl beim Login — eine Installation für beliebige GoToSocial-Instanzen
 - [x] Start-Timeline und lokale Timeline, inkl. Infinite Scroll
 - [x] Live-Streaming über WebSocket (neue Beiträge und Meldungen)
+- [x] Stabile Leseposition bei Live-Updates (Puffer + Hinweis-Pill)
 - [x] Beiträge verfassen: Inhaltswarnung, Sichtbarkeit, Anhänge mit ALT-Text
 - [x] Schreibmodus: Markdown oder Plaintext (explizit umschaltbar)
 - [x] Custom-Emoji-Picker im Composer

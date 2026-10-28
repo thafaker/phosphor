@@ -1,6 +1,7 @@
 <script lang="ts">
 	import Avatar from '#lib/components/Avatar.svelte';
 	import Icon from '#lib/components/Icon.svelte';
+	import NewItemsPill from '#lib/components/NewItemsPill.svelte';
 	import StatusCard from '#lib/components/StatusCard.svelte';
 	import type { Notification, NotificationType } from '#lib/api/types.ts';
 	import { notificationsFeed } from '#lib/stores/notifications.svelte.ts';
@@ -52,14 +53,40 @@
 
 	const current = $derived(filters.find((entry) => entry.value === filter) ?? filters[0]);
 	const visible = $derived(notificationsFeed.items.filter((item) => current.match(item)));
+	/** Pending items count for the badges/tabs, but are not rendered until applied. */
+	const knownItems = $derived([...notificationsFeed.pending, ...notificationsFeed.items]);
 
 	const unreadTotal = $derived(notificationsFeed.unread);
 
 	function countFor(entry: (typeof filters)[number]): number {
-		return notificationsFeed.items.filter(
-			(item) => entry.match(item) && !notificationsFeed.isRead(item)
-		).length;
+		return knownItems.filter((item) => entry.match(item) && !notificationsFeed.isRead(item)).length;
 	}
+
+	/** A few pixels of tolerance for fractional scroll positions. */
+	const TOP_THRESHOLD = 4;
+
+	function atTop(): boolean {
+		return window.scrollY < TOP_THRESHOLD;
+	}
+
+	/** Buffered stream notifications stay hidden while reading further down. */
+	function applyPendingIfAtTop(): void {
+		if (notificationsFeed.pending.length && atTop()) notificationsFeed.applyPending();
+	}
+
+	function handleScroll(): void {
+		applyPendingIfAtTop();
+	}
+
+	/** Show the buffered notifications: jump to the top first, then insert. */
+	function showPending(): void {
+		window.scrollTo({ top: 0, behavior: 'auto' });
+		notificationsFeed.applyPending();
+	}
+
+	$effect(() => {
+		applyPendingIfAtTop();
+	});
 
 	function markRead(notification: Notification) {
 		notificationsFeed.markRead(notification);
@@ -130,6 +157,16 @@
 		{/each}
 	</div>
 </header>
+
+<svelte:window onscroll={handleScroll} />
+
+<NewItemsPill
+	count={notificationsFeed.pending.length}
+	singular="neue Meldung"
+	plural="neue Meldungen"
+	onclick={showPending}
+	offsetClass="top-24"
+/>
 
 {#if notificationsFeed.error}
 	<div class="m-4 rounded-lg border border-danger/30 bg-danger/10 p-3 text-sm text-danger">

@@ -2,6 +2,7 @@
 	import type { Status } from '#lib/api/types.ts';
 	import type { TimelineFeed } from '#lib/stores/feed.svelte.ts';
 	import Icon from './Icon.svelte';
+	import NewItemsPill from './NewItemsPill.svelte';
 	import ReplyBox from './ReplyBox.svelte';
 	import StatusCard from './StatusCard.svelte';
 
@@ -30,6 +31,40 @@
 	 */
 	let replyingTo = $state<string | null>(null);
 
+	/** A few pixels of tolerance for fractional scroll positions. */
+	const TOP_THRESHOLD = 4;
+
+	function atTop(): boolean {
+		return window.scrollY < TOP_THRESHOLD;
+	}
+
+	/**
+	 * Stream items are buffered while the user is reading further down, so
+	 * inserting a new post cannot shift the viewport. At the top they are
+	 * applied immediately; scrolling back up also applies them.
+	 */
+	function applyPendingIfAtTop(): void {
+		if (feed.pending.length && atTop()) feed.applyPending();
+	}
+
+	function handleScroll(): void {
+		applyPendingIfAtTop();
+	}
+
+	/**
+	 * The pill is an explicit request to see the new posts. Jump to the top
+	 * first and insert afterwards: at scrollY 0 the insertion cannot move the
+	 * viewport, so the new items simply appear at the top.
+	 */
+	function showPending(): void {
+		window.scrollTo({ top: 0, behavior: 'auto' });
+		feed.applyPending();
+	}
+
+	$effect(() => {
+		applyPendingIfAtTop();
+	});
+
 	/** A reply lands in the thread, not in this timeline — only the counter moves. */
 	function onReplyPosted(parent: Status): void {
 		parent.replies_count += 1;
@@ -54,6 +89,15 @@
 		return () => observer.disconnect();
 	});
 </script>
+
+<svelte:window onscroll={handleScroll} />
+
+<NewItemsPill
+	count={feed.pending.length}
+	singular="neuer Beitrag"
+	plural="neue Beiträge"
+	onclick={showPending}
+/>
 
 {#if feed.error}
 	<div

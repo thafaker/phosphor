@@ -78,11 +78,25 @@ wss://<instanz>/api/v1/streaming?access_token=<token>&stream=user
 - `src/lib/stores/streamer.svelte.ts` hält **genau eine** Verbindung und verteilt Events an
   Abonnenten. So öffnen mehrere Views nicht mehrere Sockets.
 - Das Layout routet die Events in die Stores:
-  - `update` → neuer Beitrag an den Anfang der Start-Timeline
+  - `update` → neuer Beitrag in den Puffer der Start-Timeline (siehe unten)
   - `status.update` → bestehenden Beitrag ersetzen
   - `delete` → Beitrag entfernen
-  - `notification` → neue Meldung + Unread-Punkt; `follow_request` bzw. `follow` pflegen
-    zusätzlich die Liste der Folgenanfragen (siehe unten)
+  - `notification` → neue Meldung in den Puffer + Unread-Punkt; `follow_request` bzw.
+    `follow` pflegen zusätzlich die Liste der Folgenanfragen (siehe unten)
+
+### Leseposition bei Live-Updates
+
+Neue Stream-Beiträge werden **nicht sofort** in die Timeline eingefügt. Sonst schiebt sich der
+Inhalt unter dem Viewport nach unten: Der Browser behält seine Pixel-Scrollposition, für die
+lesende Person sieht es wie ein Sprung nach oben aus. Stattdessen landen sie in
+`TimelineFeed.pending` bzw. `NotificationsFeed.pending`, solange die Seite nicht ganz oben ist.
+Ein kleiner Hinweis („↑ 3 neue Beiträge“) erscheint; ein Klick springt an den Anfang und fügt
+sie dort ein. Scrollt man von selbst nach oben, werden sie ebenfalls übernommen. Ganz oben
+werden sie sofort eingefügt, weil dort kein Inhalt verschoben wird.
+
+`loadNew()` (Lücke nach dem Aufwachen) mischt den Puffer in der richtigen Reihenfolge mit den
+nachgeladenen Beiträgen und leert ihn; die vorhandene Höhenkompensation in `pullNew()` hält
+dabei die Scrollposition. Der Puffer wird auch bei `delete`/`status.update` mitgepflegt.
 
 Die Thread-Ansicht hört **selbst** mit (`streamer.subscribe`): `update` fügt eine neue Antwort,
 die in die offene Konversation gehört, an der richtigen Stelle ein und erhöht den Zähler des
@@ -109,8 +123,9 @@ Umgesetzt im `+layout.svelte`:
   `pullNew()`.
 - **`pullNew()` lädt nur die Lücke nach** (`since_id` = neueste bekannte ID) und hängt sie
   oben an, statt die Liste zu ersetzen (`TimelineFeed.loadNew` / `NotificationsFeed.loadNew`).
-  So bleiben Pagination und Scrollposition erhalten; ist die Seite heruntergescrollt, wird
-  die Viewport-Position über die Höhendifferenz gehalten, damit nichts springt.
+  Gepufferte Stream-Elemente werden dabei in der richtigen Reihenfolge mit eingemischt. So
+  bleiben Pagination und Scrollposition erhalten; ist die Seite heruntergescrollt, wird die
+  Viewport-Position über die Höhendifferenz gehalten, damit nichts springt.
 - Ein 60-s-Watchdog prüft zusätzlich, ob der Socket im Vordergrund gestorben ist, und lädt
   nur dann nach, wenn er tatsächlich neu verbunden werden musste.
 

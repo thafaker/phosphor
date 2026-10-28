@@ -53,6 +53,12 @@ function dedupe(notifications: Notification[]): Notification[] {
 
 export class NotificationsFeed {
 	items = $state<Notification[]>([]);
+	/**
+	 * Notifications that arrived while the user was scrolled down. See
+	 * `TimelineFeed.pending`; the list applies them only when the user is at
+	 * the top so the reading position never moves.
+	 */
+	pending = $state<Notification[]>([]);
 	loading = $state(false);
 	loaded = $state(false);
 	error = $state<string | null>(null);
@@ -78,7 +84,7 @@ export class NotificationsFeed {
 	 */
 	get unread(): number {
 		let count = 0;
-		for (const item of this.items) {
+		for (const item of [...this.pending, ...this.items]) {
 			if (!this.isRead(item)) count += 1;
 		}
 		return count;
@@ -95,7 +101,11 @@ export class NotificationsFeed {
 		this.loading = true;
 		this.error = null;
 		try {
-			this.items = dedupe(await this.loader({ limit: PAGE_SIZE }));
+			const fresh = await this.loader({ limit: PAGE_SIZE });
+			// A notification buffered while the first page was in flight arrived
+			// after the previous state and can be newer than the fetched page.
+			this.items = dedupe([...this.pending, ...fresh]);
+			this.pending = [];
 			this.loaded = true;
 		} catch (err) {
 			this.error =
@@ -124,17 +134,26 @@ export class NotificationsFeed {
 		}
 	}
 
-	/** New notification arrived over the stream. */
+	/** New notification arrived over the stream. Buffered until applied. */
 	prepend(notification: Notification): void {
 		if (this.items.some((item) => item.id === notification.id)) return;
-		this.items = [notification, ...this.items];
+		if (this.pending.some((item) => item.id === notification.id)) return;
+		this.pending = [notification, ...this.pending];
+	}
+
+	/** Insert buffered stream notifications at the top (only when scrolled to the top). */
+	applyPending(): void {
+		if (!this.pending.length) return;
+		this.items = dedupe([...this.pending, ...this.items]);
+		this.pending = [];
 	}
 
 	/** Swap in a freshly loaded copy of the status embedded in any notification. */
 	replaceStatus(status: Status): void {
-		this.items = this.items.map((item) =>
-			item.status?.id === status.id ? { ...item, status } : item
-		);
+		const replace = (item: Notification) =>
+			item.status?.id === status.id ? { ...item, status } : item;
+		this.items = this.items.map(replace);
+		this.pending = this.pending.map(replace);
 	}
 
 	/**
@@ -148,7 +167,8 @@ export class NotificationsFeed {
 			const sinceId = this.items[0]?.id;
 			const fresh = await this.loader({ limit: PAGE_SIZE, sinceId });
 			if (fresh.length) {
-				this.items = dedupe([...fresh, ...this.items]);
+				this.items = dedupe([...fresh, ...this.pending, ...this.items]);
+				this.pending = [];
 			}
 		} catch {
 			// handled on the next resume / reconnect
@@ -166,11 +186,13 @@ export class NotificationsFeed {
 
 	/**
 	 * Acknowledge everything currently loaded, and everything older. The
-	 * watermark is the newest loaded notification, not the wall clock: anything
-	 * created afterwards (i.e. not yet fetched) stays unread.
+	 * watermark is the newest known notification (including buffered ones),
+	 * not the wall clock: anything created afterwards (i.e. not yet fetched)
+	 * stays unread.
 	 */
 	markAllRead(): void {
-		this.#readUpTo = this.items[0]?.created_at ?? new Date().toISOString();
+		this.#readUpTo =
+			this.pending[0]?.created_at ?? this.items[0]?.created_at ?? new Date().toISOString();
 		this.#readIds = [];
 		this.persist();
 	}
@@ -191,11 +213,14 @@ export class NotificationsFeed {
 
 	/** Drop notifications that embed the given (deleted) status. */
 	removeStatus(id: string): void {
-		this.items = this.items.filter((item) => item.status?.id !== id);
+		const keep = (item: Notification) => item.status?.id !== id;
+		this.items = this.items.filter(keep);
+		this.pending = this.pending.filter(keep);
 	}
 
 	reset(): void {
 		this.items = [];
+		this.pending = [];
 		this.loaded = false;
 		this.error = null;
 		this.#readUpTo = null;

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Notification, Status } from '#lib/api/types.ts';
-import { NotificationsFeed } from './notifications.svelte.ts';
+import { NotificationsFeed, type NotificationsLoader } from './notifications.svelte.ts';
 
 beforeEach(() => {
 	try {
@@ -66,6 +66,65 @@ describe('NotificationsFeed unread state', () => {
 		await feed.loadNew();
 
 		expect(feed.items.map((n) => n.id)).toEqual(['2', '1']);
+		expect(feed.unread).toBe(0);
+	});
+});
+
+describe('NotificationsFeed.pending', () => {
+	async function loadedFeed(loader: NotificationsLoader = async () => [notification('1')]) {
+		const feed = new NotificationsFeed(loader);
+		await feed.load();
+		return feed;
+	}
+
+	it('puffert Stream-Meldungen, statt die Liste sofort zu verschieben', async () => {
+		const feed = await loadedFeed();
+
+		feed.prepend(notification('3'));
+		feed.prepend(notification('2'));
+
+		expect(feed.items.map((n) => n.id)).toEqual(['1']);
+		expect(feed.pending.map((n) => n.id)).toEqual(['2', '3']);
+		expect(feed.unread).toBe(3);
+
+		feed.applyPending();
+
+		expect(feed.items.map((n) => n.id)).toEqual(['2', '3', '1']);
+		expect(feed.pending).toEqual([]);
+	});
+
+	it('behält Meldungen, die vor dem ersten Laden eintreffen', async () => {
+		const feed = new NotificationsFeed(vi.fn(async () => [notification('1')]));
+
+		feed.prepend(notification('2'));
+		await feed.load();
+
+		expect(feed.items.map((n) => n.id)).toEqual(['2', '1']);
+		expect(feed.pending).toEqual([]);
+	});
+
+	it('mischt gepufferte Meldungen beim Nachladen in der richtigen Reihenfolge ein', async () => {
+		const loader = vi.fn(async ({ sinceId }: { sinceId?: string }) =>
+			sinceId ? [notification('4')] : [notification('1')]
+		);
+		const feed = await loadedFeed(loader);
+
+		feed.prepend(notification('3'));
+		feed.prepend(notification('2'));
+		await feed.loadNew();
+
+		expect(feed.items.map((n) => n.id)).toEqual(['4', '2', '3', '1']);
+		expect(feed.pending).toEqual([]);
+	});
+
+	it('markiert auch gepufferte Meldungen als gelesen', async () => {
+		const feed = await loadedFeed();
+
+		feed.prepend(notification('2'));
+		feed.markAllRead();
+
+		expect(feed.unread).toBe(0);
+		feed.applyPending();
 		expect(feed.unread).toBe(0);
 	});
 });
