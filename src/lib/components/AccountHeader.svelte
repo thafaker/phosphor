@@ -3,7 +3,7 @@
 	import { followLabel } from '#lib/utils/account.ts';
 	import { formatStat } from '#lib/utils/format.ts';
 	import { instanceHost } from '#lib/utils/instance.ts';
-	import { emojify, withExternalLinks } from '#lib/utils/text.ts';
+	import { emojify, emojifyHtml, withExternalLinks } from '#lib/utils/text.ts';
 	import { absoluteDate } from '#lib/utils/time.ts';
 	import Avatar from './Avatar.svelte';
 	import ConfirmDialog from './ConfirmDialog.svelte';
@@ -267,7 +267,7 @@
 			<div class="status-content mt-3 text-post leading-relaxed break-words text-ink">
 				<!-- Bio and field values arrive as HTML (same convention as Mastodon,
 				     which renders them client-side too). -->
-				{@html withExternalLinks(account.note)}
+				{@html withExternalLinks(emojifyHtml(account.note, account.emojis))}
 			</div>
 		{/if}
 
@@ -279,7 +279,7 @@
 							{@html emojify(field.name, account.emojis)}
 						</dt>
 						<dd class="status-content text-sm text-ink">
-							{@html field.value}
+							{@html emojifyHtml(field.value, account.emojis)}
 							{#if field.verified_at}
 								<Icon name="check" size={13} class="ml-1 inline align-text-bottom text-accent" />
 							{/if}

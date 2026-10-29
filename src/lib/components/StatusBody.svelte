@@ -15,7 +15,7 @@
 	import { formatCount } from '#lib/utils/format.ts';
 	import { instanceHost } from '#lib/utils/instance.ts';
 	import { originalStatusUrl } from '#lib/utils/status.ts';
-	import { emojify, linkMentions, withExternalLinks } from '#lib/utils/text.ts';
+	import { emojify, emojifyHtml, linkMentions, withExternalLinks } from '#lib/utils/text.ts';
 	import { absoluteTime, relativeTime } from '#lib/utils/time.ts';
 	import Avatar from './Avatar.svelte';
 	import ConfirmDialog from './ConfirmDialog.svelte';
@@ -260,7 +260,9 @@
 				class:text-base={detail}
 			>
 				<!-- GoToSocial returns sanitised HTML here. -->
-				{@html withExternalLinks(linkHashtags(linkMentions(status.content, status.mentions)))}
+				{@html withExternalLinks(
+					linkHashtags(linkMentions(emojifyHtml(status.content, status.emojis), status.mentions))
+				)}
 			</div>
 
 			<MediaGrid attachments={status.media_attachments} sensitive={status.sensitive} />

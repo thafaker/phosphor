@@ -25,6 +25,7 @@ vorbelegen (siehe `.env.example`).
 - [x] Beiträge verfassen: Inhaltswarnung, Sichtbarkeit, Anhänge mit ALT-Text
 - [x] Schreibmodus: Markdown oder Plaintext (explizit umschaltbar)
 - [x] Custom-Emoji-Picker im Composer
+- [x] Custom-Emojis in Beiträgen, Bio und Profilfeldern
 - [x] Favorisieren, Boosten, Merken
 - [x] Eigene Beiträge bearbeiten und löschen
 - [x] Thread-Ansicht mit Kontext und Inline-Antworten
@@ -34,6 +35,7 @@ vorbelegen (siehe `.env.example`).
 - [x] Blockieren und Stummschalten aus dem Profil
 - [x] Originalprofil oder Originalbeitrag öffnen und Link kopieren
 - [x] Erwähnungen im Beitragstext intern auf Profile verlinken
+- [x] In-App-Medienansicht: Bild-Lightbox, Video-Overlay und Audio-Player
 - [x] Suche (Personen, Hashtags, Beiträge) und Hashtag-Seiten
 - [x] Benachrichtigungen mit Filtern und lokalem Gelesen-Status
 - [x] Push-Benachrichtigungen per Web Push — ohne externen Relay, inkl. neuer Beiträge
@@ -45,7 +47,6 @@ vorbelegen (siehe `.env.example`).
 
 ### Als Nächstes
 
-- [ ] Bilder-Lightbox und Video-Handling statt „neuer Tab“
 - [ ] Offline-Cache (der Service Worker existiert bereits für Push, cached aber bewusst nichts)
 - [ ] Barrierefreiheit ausbauen und mit Screenreadern testen
 - [ ] i18n: UI-Strings aus den Komponenten in Sprachdateien ziehen

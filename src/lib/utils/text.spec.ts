@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { Mention } from '#lib/api/types.ts';
-import { linkMentions, withExternalLinks } from './text.ts';
+import type { CustomEmoji, Mention } from '#lib/api/types.ts';
+import { emojifyHtml, linkMentions, withExternalLinks } from './text.ts';
 
 function mention(overrides: Partial<Mention> = {}): Mention {
 	return {
@@ -11,6 +11,52 @@ function mention(overrides: Partial<Mention> = {}): Mention {
 		...overrides
 	};
 }
+
+describe('emojifyHtml', () => {
+	const blobcat: CustomEmoji = {
+		shortcode: 'blobcat',
+		url: 'https://example.org/blobcat.png',
+		static_url: 'https://example.org/blobcat.png',
+		visible_in_picker: true
+	};
+
+	it('ersetzt bekannte Shortcodes im Beitragstext', () => {
+		const result = emojifyHtml('<p>Moin :blobcat:!</p>', [blobcat]);
+
+		expect(result).toContain('src="https://example.org/blobcat.png"');
+		expect(result).toContain('alt=":blobcat:"');
+		expect(result).not.toContain('Moin :blobcat:!');
+	});
+
+	it('lässt unbekannte Shortcodes unverändert', () => {
+		const html = '<p>Moin :unbekannt:</p>';
+
+		expect(emojifyHtml(html, [blobcat])).toBe(html);
+	});
+
+	it('lässt Codeblöcke in Ruhe', () => {
+		const html = '<p>:blobcat:</p><pre><code>:blobcat:</code></pre><p>:blobcat:</p>';
+		const result = emojifyHtml(html, [blobcat]);
+
+		expect(result).toContain('<pre><code>:blobcat:</code></pre>');
+		expect(result.match(/blobcat\.png/g)).toHaveLength(2);
+	});
+
+	it('ersetzt nichts in Attributen oder URLs', () => {
+		const html = '<a href="https://example.org/:blobcat:" title=":blobcat:">:blobcat:</a>';
+		const result = emojifyHtml(html, [blobcat]);
+
+		expect(result).toContain('href="https://example.org/:blobcat:"');
+		expect(result).toContain('title=":blobcat:"');
+		expect(result.match(/blobcat\.png/g)).toHaveLength(1);
+	});
+
+	it('gibt HTML ohne Emoji-Liste unverändert zurück', () => {
+		const html = '<p>:blobcat:</p>';
+
+		expect(emojifyHtml(html, [])).toBe(html);
+	});
+});
 
 describe('linkMentions', () => {
 	it('ersetzt lokale Erwähnungen durch interne Profillinks', () => {

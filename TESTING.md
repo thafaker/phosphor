@@ -83,6 +83,7 @@ Fake-Session an. Sie brauchen weder ein Konto noch Netzwerkzugriff. Abgedeckt si
 | `login-instance.mjs`   | Instanz-Eingabe, Normalisierung, OAuth-Registrierung pro Instanz        |
 | `original-links.mjs`   | Originalprofil/-beitrag öffnen, Link kopieren (Teilen/Embedden)         |
 | `mentions.mjs`         | Erwähnungen intern verlinken; unbekannte bleiben extern                 |
+| `media-lightbox.mjs`   | Bild-Lightbox, Navigation, Fokus, Audio-Player, Custom-Emoji im Text    |
 
 ## 4. Was nur manuell geht
 
@@ -101,12 +102,14 @@ Eine kurze manuelle Checkliste für einen Testdurchgang:
 2. Start-/Lokal-Timeline scrollen; neuen Beitrag in einem zweiten Tab posten
    (Streaming): Position bleibt stehen, Hinweis „neue Beiträge“ erscheint, Klick springt
    nach oben. App in den Hintergrund schicken und zurückholen (Lückenfüllung).
-3. Beitrag mit CW, Sichtbarkeit, zwei Anhängen inkl. ALT-Text posten, bearbeiten, löschen.
+3. Beitrag mit CW, Sichtbarkeit, zwei Anhängen inkl. ALT-Text posten, bearbeiten, löschen;
+   Bild im Overlay öffnen (Pfeiltasten, Esc, Fokus zurück), Audio inline abspielen.
 4. Favorisieren, boosten, merken; Antwort mit sichtbarer Erwähnung.
 5. Meldungen: Filter, einzeln als gelesen markieren, „Alle gelesen“, Reload; neue Meldung
    bei gescrollter Liste puffert ebenfalls, statt zu springen.
 6. Suche (Personen, Hashtags, Beiträge), Hashtag öffnen und folgen/entfolgen.
-7. Composer: MD an/aus, Backslash-Hinweis, Custom-Emoji einfügen.
+7. Composer: MD an/aus, Backslash-Hinweis, Custom-Emoji einfügen; nach dem Posten prüfen,
+   dass das Emoji im Beitrag (nicht als Shortcode) erscheint.
 8. Profil öffnen, folgen/entfolgen, stummschalten/blockieren.
 9. Originalprofil und Originalbeitrag öffnen (neuer Tab), beide Links kopieren.
 10. Erwähnung im Beitrag anklicken: Profil öffnet sich in Phosphor; unbekannte Erwähnung extern.

@@ -5,7 +5,7 @@
 	import { followRequests } from '#lib/stores/followRequests.svelte.ts';
 	import { refreshEvent } from '#lib/stores/refresh.svelte.ts';
 	import { absoluteDate } from '#lib/utils/time.ts';
-	import { emojify, withExternalLinks } from '#lib/utils/text.ts';
+	import { emojify, emojifyHtml, withExternalLinks } from '#lib/utils/text.ts';
 
 	// Always re-read on open: a request may have been handled on another device,
 	// and there is no pagination here to preserve. Pull-to-refresh triggers the
@@ -74,7 +74,7 @@
 
 						{#if account.note}
 							<div class="status-content mt-1 line-clamp-3 text-sm break-words text-ink-soft">
-								{@html withExternalLinks(account.note)}
+								{@html withExternalLinks(emojifyHtml(account.note, account.emojis))}
 							</div>
 						{/if}
 

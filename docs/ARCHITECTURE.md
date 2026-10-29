@@ -272,10 +272,16 @@ API-Fehler zurückgerollt. Da die Stores `$state` verwenden, greifen die Änderu
 Die Instanz stellt ihre Emojis über `GET /api/v1/custom_emojis` bereit
 (`getCustomEmojis`, gecacht in `stores/emojis.svelte.ts`). `EmojiPicker.svelte` zeigt sie
 lazy in einem Dropdown mit Suche und fügt den Shortcode **an der Cursorposition** ein
-(Auswahl wird ersetzt, danach steht der Cursor hinter dem Emoji). Der Server ersetzt
-`:shortcode:` beim Rendern selbst, deshalb funktioniert die Anzeige in Beiträgen,
-Anzeigenamen und Profilfeldern ohne Zusatzarbeit; `emojify()` deckt die reinen
-Textfelder (Anzeigenamen, Feldnamen) ab.
+(Auswahl wird ersetzt, danach steht der Cursor hinter dem Emoji).
+
+GoToSocial ersetzt `:shortcode:` im `content` **nicht** selbst: Es liefert den Shortcode-Text
+und die passende Liste `status.emojis` (bzw. `account.emojis`) daneben. Phosphor löst deshalb
+clientseitig auf:
+
+- `emojify()` für reine Textfelder (Anzeigenamen, Feldnamen); der Text wird zuerst escaped.
+- `emojifyHtml()` für bereits gerendertes HTML (Beitragstext, Bio, Feldwerte). Es ersetzt nur
+  Textknoten, lässt Attribute/URLs unangetastet und überspringt `<code>`/`<pre>`, damit
+  Shortcode-Beispiele wörtlich bleiben.
 
 ## Link-Preview-Cards
 
@@ -351,6 +357,22 @@ Die Limits (Anzahl, Bild-/Videogröße, Beschreibungs- und Zeichenlänge) kommen
 MIME-Typen fürs `accept`-Attribut. Fehlen die Instanzangaben, greifen die Fallbacks aus
 `config.ts`. Dateityp und -größe werden schon vor dem Upload geprüft; der Upload selbst läuft
 parallel über `Promise.allSettled`, damit ein fehlgeschlagener Anhang die anderen nicht blockt.
+
+### Darstellung
+
+`components/MediaGrid.svelte` rendert Anhänge direkt im Beitrag:
+
+- **Bilder** sind Buttons und öffnen `components/MediaLightbox.svelte` als Overlay — kein
+  neuer Tab. Die Lightbox zeigt Vor/Zurück (auch per Pfeiltasten), Zähler, ALT-Text,
+  Original-Link, schließt per Esc/Button/Backdrop und gibt den Fokus an den Auslöser zurück.
+- **Video/GIFV** laufen inline mit nativen Controls; ein Overlay-Button öffnet dieselbe
+  Lightbox (GIFV dort stumm/loop).
+- **Audio** bekommt einen inline `<audio controls>`-Player mit Beschreibung.
+- **Unbekannte Typen** bleiben ein externer Link.
+
+Bei sensiblen Beiträgen liegt vorher der Reveal-Button über dem Grid; die Lightbox öffnet
+erst nach dem Aufdecken. Die Lightbox sperrt das Body-Scrolling und ist als
+`role="dialog" aria-modal="true"` ausgezeichnet.
 
 ## Beiträge löschen
 
@@ -623,15 +645,16 @@ Live-Vorschau. `'system'` lauscht auf `prefers-color-scheme` und folgt Änderung
 ✅ Folgenanfragen annehmen/ablehnen, ✅ Blockieren/Stummschalten aus dem Profil,
 ✅ Suche & Hashtag-Timelines, ✅ Meldungen filtern & einzeln als gelesen markieren,
 ✅ expliziter Markdown-/Plaintext-Modus im Composer, ✅ Custom-Emoji-Picker,
+✅ Custom-Emojis in Beiträgen, Bio und Profilfeldern,
+✅ Medien-Lightbox für Bilder, Video-Overlay und Audio-Player,
 ✅ Instanz-Auswahl beim Login (eine App für beliebige GtS-Instanzen),
 ✅ Originalprofil/-beitrag öffnen und Link kopieren (Teilen/Embedden),
 ✅ Erwähnungen im Beitragstext als interne Profillinks.
 
 ## Nächste Schritte
 
-1. **Bilder-Lightbox** und Video-Handling statt „neuer Tab“.
-2. **Offline-Cache** (der Service Worker existiert bereits für Push, cached aber bewusst nichts).
-3. **Barrierefreiheit** ausbauen und mit Screenreadern testen (Phanpys bekannte Schwäche).
-4. **i18n**: UI-Strings aus den Komponenten in Sprachdateien ziehen.
-5. **Link-Preview-Cards**: GtS 0.22 liefert `card` nie (kein OpenGraph-Fetch); die Anzeige
+1. **Offline-Cache** (der Service Worker existiert bereits für Push, cached aber bewusst nichts).
+2. **Barrierefreiheit** ausbauen und mit Screenreadern testen (Phanpys bekannte Schwäche).
+3. **i18n**: UI-Strings aus den Komponenten in Sprachdateien ziehen.
+4. **Link-Preview-Cards**: GtS 0.22 liefert `card` nie (kein OpenGraph-Fetch); die Anzeige
    in `StatusBody` ist fertig, bräuchte aber Server-/Proxy-Unterstützung.

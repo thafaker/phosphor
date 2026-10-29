@@ -11,6 +11,11 @@ export function escapeHtml(input: string): string {
 
 const SHORTCODE = /:([a-zA-Z0-9_]+):/g;
 
+function emojiImage(shortcode: string, url: string): string {
+	const alt = escapeHtml(`:${shortcode}:`);
+	return `<img class="inline-block h-[1.2em] w-[1.2em] align-[-0.2em]" src="${escapeHtml(url)}" alt="${alt}" title="${alt}" />`;
+}
+
 /**
  * Turn `:shortcode:` custom emojis in plain text (display names, bios) into
  * <img> tags. The surrounding text is escaped first, so this is safe to feed
@@ -21,9 +26,35 @@ export function emojify(text: string, emojis: CustomEmoji[] = []): string {
 	const map = new Map(emojis.map((emoji) => [emoji.shortcode, emoji.url]));
 	return escapeHtml(text).replace(SHORTCODE, (match, code: string) => {
 		const url = map.get(code);
-		if (!url) return match;
-		const alt = escapeHtml(match);
-		return `<img class="inline-block h-[1.2em] w-[1.2em] align-[-0.2em]" src="${escapeHtml(url)}" alt="${alt}" title="${alt}" />`;
+		return url ? emojiImage(code, url) : match;
+	});
+}
+
+/**
+ * Replace custom-emoji shortcodes inside already-rendered HTML (status content,
+ * bios, profile fields). Only text outside tags and outside <code>/<pre> is
+ * touched, so URLs, attributes and code samples stay literal.
+ */
+export function emojifyHtml(html: string, emojis: CustomEmoji[] = []): string {
+	if (!emojis.length) return html;
+	const map = new Map(emojis.map((emoji) => [emoji.shortcode, emoji.url]));
+	let codeDepth = 0;
+
+	return html.replace(/<[^>]*>|[^<]+/g, (segment) => {
+		if (segment.startsWith('<')) {
+			const closing = /^<\s*\//.test(segment);
+			const tag = /^<\s*\/?\s*([a-zA-Z][\w-]*)/.exec(segment)?.[1]?.toLowerCase();
+			if (tag === 'code' || tag === 'pre') {
+				if (closing) codeDepth = Math.max(0, codeDepth - 1);
+				else if (!/\/>\s*$/.test(segment)) codeDepth += 1;
+			}
+			return segment;
+		}
+		if (codeDepth > 0) return segment;
+		return segment.replace(SHORTCODE, (match, code: string) => {
+			const url = map.get(code);
+			return url ? emojiImage(code, url) : match;
+		});
 	});
 }
 
