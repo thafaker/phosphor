@@ -7,6 +7,8 @@ import type { InstanceLimits, MediaType } from '#lib/api/types.ts';
  * abandoned draft never leaves orphaned media on the server.
  */
 export interface MediaDraft {
+	/** Stable client-side key (previews are replaced after compression). */
+	localId: string;
 	file: File;
 	/** Local object URL for the preview; must be revoked when discarding. */
 	previewUrl: string;
@@ -16,6 +18,12 @@ export interface MediaDraft {
 	/** Set once the upload succeeded; reused if the post is retried. */
 	id?: string;
 	uploading?: boolean;
+	/** True while the image is being resized/re-encoded in the browser. */
+	preparing?: boolean;
+	/** Original byte size, when compression replaced the file. */
+	originalSize?: number;
+	/** Set when the prepared file still violates an instance limit. */
+	invalid?: boolean;
 	error?: string | null;
 }
 
@@ -29,6 +37,8 @@ export function mediaTypeFor(mime: string): MediaType {
 
 export function createMediaDraft(file: File): MediaDraft {
 	return {
+		localId:
+			globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`,
 		file,
 		previewUrl: URL.createObjectURL(file),
 		type: mediaTypeFor(file.type),
@@ -50,11 +60,20 @@ export function formatBytes(bytes: number): string {
 /**
  * Client-side pre-check so an unsupported or oversized file fails instantly,
  * rather than after a long upload. Returns a message, or null when acceptable.
+ *
+ * `allowOversizeImages` is for the composer: photos above the instance limit
+ * may still become acceptable after {@link compressImage} resized them, so the
+ * size check happens again on the prepared file.
  */
-export function validateMediaFile(file: File, limits: InstanceLimits): string | null {
+export function validateMediaFile(
+	file: File,
+	limits: InstanceLimits,
+	options: { allowOversizeImages?: boolean } = {}
+): string | null {
 	if (limits.supportedMediaTypes.length && !limits.supportedMediaTypes.includes(file.type)) {
 		return `Nicht unterstützter Dateityp: ${file.type || file.name}`;
 	}
+	if (options.allowOversizeImages && file.type.startsWith('image/')) return null;
 	const isVideo = file.type.startsWith('video/') || file.type.startsWith('audio/');
 	const limit = isVideo ? limits.videoSizeLimit : limits.imageSizeLimit;
 	if (limit > 0 && file.size > limit) {

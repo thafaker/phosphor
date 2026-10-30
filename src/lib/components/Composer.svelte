@@ -4,6 +4,7 @@
 	import type { Status, Visibility } from '#lib/api/types.ts';
 	import { session } from '#lib/auth/session.svelte.ts';
 	import { preferences } from '#lib/stores/preferences.svelte.ts';
+	import { compressImage } from '#lib/utils/image.ts';
 	import {
 		createMediaDraft,
 		revokeMediaDraft,
@@ -55,12 +56,16 @@
 
 	const remaining = $derived(session.maxChars - text.length);
 	const uploading = $derived(drafts.some((draft) => draft.uploading));
+	const preparing = $derived(drafts.some((draft) => draft.preparing));
+	const hasInvalid = $derived(drafts.some((draft) => draft.invalid));
 	/** Markdown eats backslashes as escapes; point that out only when relevant. */
 	const showEscapingHint = $derived(markdown && text.includes('\\'));
 	const canSubmit = $derived(
 		(text.trim().length > 0 || drafts.length > 0) &&
 			remaining >= 0 &&
 			!submitting &&
+			!preparing &&
+			!hasInvalid &&
 			!(cwEnabled && !spoilerText.trim())
 	);
 	// Prefer the types the instance actually accepts; fall back to broad globs
@@ -115,14 +120,63 @@
 				error = `Maximal ${session.limits.maxMediaAttachments} Anhänge pro Beitrag.`;
 				break;
 			}
-			const problem = validateMediaFile(file, session.limits);
+			// Photos over the instance limit may still fit after compression; the
+			// prepared file is validated again below.
+			const problem = validateMediaFile(file, session.limits, { allowOversizeImages: true });
 			if (problem) {
 				error = problem;
 				continue;
 			}
 			added.push(createMediaDraft(file));
 		}
-		if (added.length) drafts = [...drafts, ...added];
+		if (!added.length) return;
+		const firstNew = drafts.length;
+		drafts = [...drafts, ...added];
+		// Read the drafts back from the state array: Svelte wraps them in proxies,
+		// and `prepareDraft` must mutate the same objects the UI renders.
+		for (let index = firstNew; index < drafts.length; index += 1) {
+			const draft = drafts[index];
+			if (draft.type === 'image') void prepareDraft(draft);
+		}
+	}
+
+	/**
+	 * Resize/re-encode a photo before it is uploaded. The draft stays visible
+	 * with a spinner; the ALT text remains editable while this runs. If the
+	 * browser cannot decode the image, the original is kept and validated.
+	 */
+	async function prepareDraft(draft: MediaDraft): Promise<void> {
+		draft.preparing = true;
+		draft.error = null;
+		draft.invalid = false;
+		try {
+			const result = await compressImage(draft.file, session.limits);
+			if (!drafts.includes(draft)) return;
+
+			if (result.compressed) {
+				const oldPreview = draft.previewUrl;
+				draft.file = result.file;
+				draft.previewUrl = URL.createObjectURL(result.file);
+				draft.originalSize = result.originalSize;
+				URL.revokeObjectURL(oldPreview);
+			}
+
+			const problem = validateMediaFile(draft.file, session.limits);
+			if (problem) {
+				draft.error = problem;
+				draft.invalid = true;
+			}
+		} catch {
+			if (drafts.includes(draft)) {
+				const problem = validateMediaFile(draft.file, session.limits);
+				if (problem) {
+					draft.error = problem;
+					draft.invalid = true;
+				}
+			}
+		} finally {
+			draft.preparing = false;
+		}
 	}
 
 	function removeDraft(draft: MediaDraft): void {
@@ -140,6 +194,7 @@
 	 * post never duplicates media.
 	 */
 	async function uploadDrafts(): Promise<boolean> {
+		if (drafts.some((draft) => draft.preparing || draft.invalid)) return false;
 		const pending = drafts.filter((draft) => !draft.id);
 		const results = await Promise.allSettled(
 			pending.map(async (draft) => {
@@ -366,7 +421,13 @@
 					class="flex items-center gap-1.5 rounded-full bg-accent px-3.5 py-1.5 text-sm font-semibold text-accent-ink transition enabled:hover:bg-accent/90 disabled:cursor-not-allowed disabled:opacity-40"
 				>
 					<Icon name="send" size={15} />
-					{uploading ? 'Lädt hoch…' : submitting ? 'Sendet…' : 'Posten'}
+					{preparing
+						? 'Bereitet vor…'
+						: uploading
+							? 'Lädt hoch…'
+							: submitting
+								? 'Sendet…'
+								: 'Posten'}
 				</button>
 			</div>
 

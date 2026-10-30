@@ -73,17 +73,18 @@ BASE=http://127.0.0.1:4174 node e2e/notifications.mjs
 Die E2E-Tests **mocken die komplette API** (`**/api/**`) und melden eine
 Fake-Session an. Sie brauchen weder ein Konto noch Netzwerkzugriff. Abgedeckt sind:
 
-| Datei                  | Prüft                                                                   |
-| ---------------------- | ----------------------------------------------------------------------- |
-| `pull-to-refresh.mjs`  | Geste: Schwelle, Dämpfung, Scroll-/Seitenabgrenzung, Auslösung          |
-| `notifications.mjs`    | Filter-Tabs, Ungelesen-Zähler, einzeln/alle gelesen, Persistenz         |
-| `stream-buffering.mjs` | Stream-Puffer: Scrollposition, Hinweis, Einfügen bei Timeline/Meldungen |
-| `composer-format.mjs`  | Markdown/Plain-Modus, Backslash-Erhalt, Favicon                         |
-| `emoji-picker.mjs`     | Emoji-Suche, Einfügen an der Cursorposition, POST-Body                  |
-| `login-instance.mjs`   | Instanz-Eingabe, Normalisierung, OAuth-Registrierung pro Instanz        |
-| `original-links.mjs`   | Originalprofil/-beitrag öffnen, Link kopieren (Teilen/Embedden)         |
-| `mentions.mjs`         | Erwähnungen intern verlinken; unbekannte bleiben extern                 |
-| `media-lightbox.mjs`   | Bild-Lightbox, Navigation, Fokus, Audio-Player, Custom-Emoji im Text    |
+| Datei                   | Prüft                                                                   |
+| ----------------------- | ----------------------------------------------------------------------- |
+| `pull-to-refresh.mjs`   | Geste: Schwelle, Dämpfung, Scroll-/Seitenabgrenzung, Auslösung          |
+| `notifications.mjs`     | Filter-Tabs, Ungelesen-Zähler, einzeln/alle gelesen, Persistenz         |
+| `stream-buffering.mjs`  | Stream-Puffer: Scrollposition, Hinweis, Einfügen bei Timeline/Meldungen |
+| `composer-format.mjs`   | Markdown/Plain-Modus, Backslash-Erhalt, Favicon                         |
+| `emoji-picker.mjs`      | Emoji-Suche, Einfügen an der Cursorposition, POST-Body                  |
+| `login-instance.mjs`    | Instanz-Eingabe, Normalisierung, OAuth-Registrierung pro Instanz        |
+| `original-links.mjs`    | Originalprofil/-beitrag öffnen, Link kopieren (Teilen/Embedden)         |
+| `mentions.mjs`          | Erwähnungen intern verlinken; unbekannte bleiben extern                 |
+| `media-lightbox.mjs`    | Bild-Lightbox, Navigation, Fokus, Audio-Player, Custom-Emoji im Text    |
+| `image-compression.mjs` | Großes Foto wird vor dem Upload auf 1024 px/JPEG verkleinert            |
 
 ## 4. Was nur manuell geht
 
@@ -103,7 +104,8 @@ Eine kurze manuelle Checkliste für einen Testdurchgang:
    (Streaming): Position bleibt stehen, Hinweis „neue Beiträge“ erscheint, Klick springt
    nach oben. App in den Hintergrund schicken und zurückholen (Lückenfüllung).
 3. Beitrag mit CW, Sichtbarkeit, zwei Anhängen inkl. ALT-Text posten, bearbeiten, löschen;
-   Bild im Overlay öffnen (Pfeiltasten, Esc, Fokus zurück), Audio inline abspielen.
+   großes Handyfoto: Composer zeigt „Wird komprimiert…“ und danach die Ersparnis, Upload
+   ist deutlich kleiner; Bild im Overlay öffnen (Pfeiltasten, Esc, Fokus zurück), Audio inline.
 4. Favorisieren, boosten, merken; Antwort mit sichtbarer Erwähnung.
 5. Meldungen: Filter, einzeln als gelesen markieren, „Alle gelesen“, Reload; neue Meldung
    bei gescrollter Liste puffert ebenfalls, statt zu springen.

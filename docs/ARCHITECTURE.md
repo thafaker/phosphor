@@ -343,6 +343,26 @@ Dateien werden **erst beim Absenden** hochgeladen (`POST /api/v2/media`, `upload
 zurück, wenn ein Entwurf verworfen wird; ein bereits hochgeladener Anhang behält bei einem
 erneuten Versuch seine ID und wird nicht doppelt gesendet.
 
+### Client-seitige Bildkomprimierung
+
+GoToSocial transkodiert Uploads nicht; die Instanz akzeptiert hier bis zu 40 MB. Damit
+Handyfotos nicht unkomprimiert auf dem Heimserver landen und mobil langsam laden, verkleinert
+`utils/image.ts#compressImage()` Fotos schon bei der Auswahl:
+
+- JPEG, PNG, WebP, AVIF, HEIC/HEIF; **GIF, APNG und SVG** bleiben unangetastet, damit
+  Animation, Transparenz und Vektorschärfe erhalten bleiben. PNG bleibt PNG.
+- Lange Kante **max. 1024 px**, JPEG-Qualität startet bei 0.82; Quality bzw. Kantenlänge
+  werden iterativ reduziert, bis ~300 KB oder das Instanzlimit erreicht ist.
+- `createImageBitmap(..., { imageOrientation: 'from-image' })` berücksichtigt die
+  EXIF-Ausrichtung; das Neu-Encodieren entfernt EXIF-/GPS-Metadaten.
+- Dateien unter 600 KB werden nicht angefasst. Bei Decode-/Canvas-Fehlern bleibt das Original
+  als Fallback.
+- `MediaDraft.preparing` zeigt „Wird komprimiert…“ und danach die Ersparnis
+  (z. B. `6 MB → 240 KB`); der Posten-Button bleibt gesperrt, bis alle Fotos fertig sind.
+  Anschließend prüft `validateMediaFile()` die vorbereitete Datei erneut gegen das Limit.
+  `allowOversizeImages` erlaubt große Fotos nur vor diesem Schritt; Videos/Audio werden
+  weiterhin direkt gegen ihre Limits geprüft.
+
 Zwei Eigenheiten der API bestimmen die Umsetzung:
 
 - **Kein 202/Polling.** GoToSocial verarbeitet synchron und antwortet mit `200 OK` und fertigem
@@ -639,6 +659,7 @@ Live-Vorschau. `'system'` lauscht auf `prefers-color-scheme` und folgt Änderung
 ✅ Thread (Klick auf Beitrag), ✅ Benachrichtigungen, ✅ Push, ✅ Hell/Dunkel/System,
 ✅ Schriftgröße, ✅ reduzierte Bewegung, ✅ Bearbeiten eigener Beiträge,
 ✅ Anhänge (Bild/Video/Audio mit ALT-Text), ✅ Löschen eigener Beiträge,
+✅ Client-seitige Bildkomprimierung (max. 1024 px, ~300 KB),
 ✅ Profile (`/accounts/[id]` mit Bio, Beiträgen, Folgen/Entfolgen),
 ✅ Antworten mit sichtbarer @-Erwähnung,
 ✅ Antworten inline (Timeline & Thread), Live-Aktualisierung im Thread,

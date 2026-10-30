@@ -47,6 +47,16 @@ describe('validateMediaFile', () => {
 		expect(validateMediaFile(big, limits)).toContain('zu groß');
 	});
 
+	it('lässt zu große Bilder vor der Komprimierung zu', () => {
+		const big = makeFile('big.png', 'image/png', 8 * 1024 * 1024);
+		expect(validateMediaFile(big, limits, { allowOversizeImages: true })).toBeNull();
+	});
+
+	it('wendet die Ausnahme nicht auf Videos an', () => {
+		const big = makeFile('big.mp4', 'video/mp4', 9 * 1024 * 1024);
+		expect(validateMediaFile(big, limits, { allowOversizeImages: true })).toContain('zu groß');
+	});
+
 	it('measures video against the video limit, not the image limit', () => {
 		const size = 4 * 1024 * 1024;
 		expect(validateMediaFile(makeFile('clip.mp4', 'video/mp4', size), limits)).toBeNull();

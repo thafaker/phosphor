@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { MediaDraft } from '#lib/utils/media.ts';
+	import { formatBytes } from '#lib/utils/media.ts';
 	import Icon from './Icon.svelte';
 
 	interface Props {
@@ -41,7 +42,7 @@
 
 {#if drafts.length}
 	<ul class="mt-2 space-y-2">
-		{#each drafts as draft (draft.previewUrl)}
+		{#each drafts as draft (draft.localId)}
 			<li class="flex gap-3 rounded-lg border border-line bg-inset p-2">
 				<div class="relative h-16 w-16 shrink-0 overflow-hidden rounded-md bg-canvas">
 					{#if draft.type === 'video'}
@@ -54,7 +55,7 @@
 							<Icon name="image" size={22} />
 						</div>
 					{/if}
-					{#if draft.uploading}
+					{#if draft.uploading || draft.preparing}
 						<div class="absolute inset-0 flex items-center justify-center bg-scrim/60">
 							<Icon name="refresh" size={18} class="animate-spin text-ink-strong" />
 						</div>
@@ -72,6 +73,13 @@
 						aria-label="Bildbeschreibung"
 						class="w-full resize-none rounded-md border border-line bg-surface px-2 py-1 text-sm text-ink placeholder-ink-faint outline-none focus:border-accent/60"
 					></textarea>
+					{#if draft.preparing}
+						<p class="mt-0.5 text-xs text-ink-faint">Wird komprimiert…</p>
+					{:else if draft.originalSize && draft.originalSize > draft.file.size}
+						<p class="mt-0.5 text-xs text-ink-faint">
+							{formatBytes(draft.originalSize)} → {formatBytes(draft.file.size)}
+						</p>
+					{/if}
 					{#if draft.error}
 						<p class="mt-0.5 text-xs text-danger">{draft.error}</p>
 					{/if}

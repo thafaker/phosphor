@@ -23,6 +23,7 @@ vorbelegen (siehe `.env.example`).
 - [x] Live-Streaming über WebSocket (neue Beiträge und Meldungen)
 - [x] Stabile Leseposition bei Live-Updates (Puffer + Hinweis-Pill)
 - [x] Beiträge verfassen: Inhaltswarnung, Sichtbarkeit, Anhänge mit ALT-Text
+- [x] Client-seitige Bildkomprimierung (max. 1024 px, Ziel ~300 KB)
 - [x] Schreibmodus: Markdown oder Plaintext (explizit umschaltbar)
 - [x] Custom-Emoji-Picker im Composer
 - [x] Custom-Emojis in Beiträgen, Bio und Profilfeldern
