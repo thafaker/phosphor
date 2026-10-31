@@ -17,16 +17,17 @@
 	} from '#lib/api/gotosocial.ts';
 	import type { Account, Relationship } from '#lib/api/types.ts';
 	import { session } from '#lib/auth/session.svelte.ts';
+	import { t } from '#lib/i18n/index.svelte.ts';
 	import { TimelineFeed } from '#lib/stores/feed.svelte.ts';
 	import { followRequests } from '#lib/stores/followRequests.svelte.ts';
 	import { refreshEvent } from '#lib/stores/refresh.svelte.ts';
 	import { followIntent } from '#lib/utils/account.ts';
 	type Filter = 'posts' | 'replies' | 'media';
 
-	const tabs: { value: Filter; label: string }[] = [
-		{ value: 'posts', label: 'Beiträge' },
-		{ value: 'replies', label: 'Mit Antworten' },
-		{ value: 'media', label: 'Medien' }
+	const tabs: { value: Filter; label: () => string }[] = [
+		{ value: 'posts', label: () => t('account.tab.posts') },
+		{ value: 'replies', label: () => t('account.tab.replies') },
+		{ value: 'media', label: () => t('account.tab.media') }
 	];
 
 	let account = $state<Account | null>(null);
@@ -56,14 +57,12 @@
 
 	const emptyText = $derived.by(() => {
 		if (isSelf) {
-			return filter === 'media'
-				? 'Du hast noch keine Medien-Beiträge.'
-				: 'Du hast noch nichts gepostet.';
+			return filter === 'media' ? t('account.empty.selfMedia') : t('account.empty.selfPosts');
 		}
 		if (account?.locked && !relationship?.following) {
-			return 'Dieses Profil ist privat — folge, um Beiträge zu sehen.';
+			return t('account.empty.private');
 		}
-		return filter === 'media' ? 'Keine Medien-Beiträge.' : 'Noch keine Beiträge.';
+		return filter === 'media' ? t('account.empty.media') : t('account.empty.posts');
 	});
 
 	function accountId(): string {
@@ -113,7 +112,7 @@
 			// current follow state and start from "Folgen".
 			relationship = await getRelationship(id).catch(() => null);
 		} catch (err) {
-			error = err instanceof Error ? err.message : 'Profil konnte nicht geladen werden.';
+			error = err instanceof Error ? err.message : t('account.loadFailed');
 		} finally {
 			loading = false;
 		}
@@ -129,7 +128,7 @@
 					? await followAccount(account.id)
 					: await unfollowAccount(account.id);
 		} catch (err) {
-			followError = err instanceof Error ? err.message : 'Aktion fehlgeschlagen.';
+			followError = err instanceof Error ? err.message : t('common.actionFailed');
 		} finally {
 			followBusy = false;
 		}
@@ -159,10 +158,7 @@
 	async function toggleMute(): Promise<void> {
 		if (!account) return;
 		const muted = relationship?.muting;
-		await moderate(
-			(id) => (muted ? unmuteAccount(id) : muteAccount(id)),
-			'Stummschalten fehlgeschlagen.'
-		);
+		await moderate((id) => (muted ? unmuteAccount(id) : muteAccount(id)), t('account.muteFailed'));
 	}
 
 	async function toggleBlock(): Promise<void> {
@@ -170,7 +166,7 @@
 		const blocked = relationship?.blocking;
 		await moderate(
 			(id) => (blocked ? unblockAccount(id) : blockAccount(id)),
-			'Blockieren fehlgeschlagen.'
+			t('account.blockFailed')
 		);
 	}
 
@@ -181,7 +177,7 @@
 		try {
 			relationship = await followRequests.acceptAndReturn(account.id);
 		} catch (err) {
-			followError = err instanceof Error ? err.message : 'Anfrage fehlgeschlagen.';
+			followError = err instanceof Error ? err.message : t('account.requestFailed');
 		} finally {
 			moderationBusy = false;
 		}
@@ -196,7 +192,7 @@
 			// Without a follow there is no relationship worth showing.
 			relationship = null;
 		} catch (err) {
-			followError = err instanceof Error ? err.message : 'Anfrage fehlgeschlagen.';
+			followError = err instanceof Error ? err.message : t('account.requestFailed');
 		} finally {
 			moderationBusy = false;
 		}
@@ -209,12 +205,12 @@
 	<a
 		href="/"
 		class="rounded-md p-1 text-ink-soft hover:bg-accent/10 hover:text-ink-strong"
-		aria-label="Zurück"
+		aria-label={t('common.back')}
 	>
 		<Icon name="chevron-left" size={20} />
 	</a>
 	<h1 class="min-w-0 flex-1 truncate text-lg font-semibold tracking-tight text-ink-strong">
-		{account ? `@${account.acct}` : 'Profil'}
+		{account ? `@${account.acct}` : t('account.title')}
 	</h1>
 </header>
 
@@ -241,7 +237,7 @@
 		onRejectRequest={() => void rejectRequest()}
 	/>
 
-	<nav class="flex border-b border-line" aria-label="Beitragsarten">
+	<nav class="flex border-b border-line" aria-label={t('account.tabsLabel')}>
 		{#each tabs as tab (tab.value)}
 			<button
 				type="button"
@@ -251,7 +247,7 @@
 				aria-current={filter === tab.value ? 'true' : undefined}
 				onclick={() => (filter = tab.value)}
 			>
-				{tab.label}
+				{tab.label()}
 			</button>
 		{/each}
 	</nav>

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { t } from '#lib/i18n/index.svelte.ts';
 	import { customEmoji } from '#lib/stores/emojis.svelte.ts';
 	import Icon from './Icon.svelte';
 
@@ -54,8 +55,8 @@
 		type="button"
 		{disabled}
 		class="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-ink-soft hover:bg-accent/10 disabled:opacity-40"
-		title="Custom-Emoji einfügen"
-		aria-label="Custom-Emoji einfügen"
+		title={t('emoji.insert')}
+		aria-label={t('emoji.insert')}
 		aria-haspopup="dialog"
 		aria-expanded={open}
 		onclick={toggle}
@@ -67,12 +68,12 @@
 		<div
 			class="absolute top-full left-0 z-30 mt-1 w-72 rounded-lg border border-line bg-surface p-2 shadow-glow"
 			role="dialog"
-			aria-label="Custom-Emojis"
+			aria-label={t('emoji.dialog')}
 		>
 			<input
 				type="search"
 				bind:value={query}
-				placeholder="Emoji suchen…"
+				placeholder={t('emoji.search')}
 				class="w-full rounded-md border border-line bg-inset px-2 py-1 text-xs text-ink-strong placeholder-ink-faint outline-none focus:border-accent/60"
 			/>
 
@@ -84,9 +85,7 @@
 				<p class="px-1 py-4 text-xs text-danger">{customEmoji.error}</p>
 			{:else if !matches.length}
 				<p class="px-1 py-4 text-xs text-ink-faint">
-					{customEmoji.items.length
-						? 'Kein Emoji gefunden.'
-						: 'Diese Instanz hat keine Custom-Emojis.'}
+					{customEmoji.items.length ? t('emoji.noneFound') : t('emoji.noneAvailable')}
 				</p>
 			{:else}
 				<div class="mt-2 grid max-h-56 grid-cols-7 gap-1 overflow-y-auto">

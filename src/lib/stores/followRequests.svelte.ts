@@ -4,6 +4,7 @@ import {
 	rejectFollowRequest
 } from '#lib/api/gotosocial.ts';
 import type { Account, Relationship } from '#lib/api/types.ts';
+import { t } from '#lib/i18n/index.svelte.ts';
 
 /**
  * Pending follow requests for the logged-in account.
@@ -34,7 +35,7 @@ export class FollowRequestsStore {
 			this.items = await getFollowRequests();
 			this.loaded = true;
 		} catch (err) {
-			this.error = err instanceof Error ? err.message : 'Anfragen konnten nicht geladen werden.';
+			this.error = err instanceof Error ? err.message : t('requests.loadFailed');
 		} finally {
 			this.loading = false;
 		}
@@ -61,7 +62,7 @@ export class FollowRequestsStore {
 	 * them; the request stays in the list in that case.
 	 */
 	async acceptAndReturn(accountId: string): Promise<Relationship> {
-		if (this.busy[accountId]) throw new Error('Anfrage läuft bereits.');
+		if (this.busy[accountId]) throw new Error(t('requests.busy'));
 		this.busy = { ...this.busy, [accountId]: true };
 		this.error = null;
 		try {

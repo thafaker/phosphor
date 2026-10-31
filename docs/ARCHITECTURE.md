@@ -212,6 +212,10 @@ src/
       session.svelte.ts       # Session-State (Token, Account, Login/Logout)
     push/
       push.svelte.ts          # Web-Push-Abo: SW registrieren, abonnieren, synchronisieren
+    i18n/
+      index.svelte.ts         # t()/plural(), reaktive Sprache (persistiert)
+      messages/de.ts          # deutscher Katalog (Quelle der MessageKey-Typen)
+      messages/en.ts          # englischer Katalog, typgeprüft gegen de.ts
     stores/
       streamer.svelte.ts      # zentrale Stream-Verteilung
       feed.svelte.ts          # TimelineFeed-Klasse; homeFeed & localFeed
@@ -248,7 +252,7 @@ src/
     local/+page.svelte        # lokale Timeline
     follow_requests/+page.svelte # offene Folgenanfragen annehmen/ablehnen
     notifications/+page.svelte
-    settings/+page.svelte     # Erscheinungsbild, Schriftgröße, Neu-laden-Geste & Push
+    settings/+page.svelte     # Sprache, Erscheinungsbild, Schriftgröße, Gesten & Push
     status/[id]/+page.svelte  # Thread (Vorfahren + Hauptstatus + Antworten)
     accounts/[id]/+page.svelte # Profil: Kopf, Filter, Beiträge, Folgen/Moderation
 ```
@@ -606,6 +610,31 @@ unter `phosphor:prefs:v1`. Damit beim Laden kein heller/dunkler Blitz entsteht, 
 kurzes Inline-Skript in `app.html` die gespeicherten Werte **vor** dem ersten Paint an; der
 Store hält sich danach synchron.
 
+## Sprache & i18n
+
+Die Oberfläche ist auf Deutsch und Englisch verfügbar. Statt einer i18n-Bibliothek gibt es eine
+kleine eigene Lösung (`src/lib/i18n/`), weil nur zwei Sprachen und einfache Platzhalter gebraucht
+werden:
+
+- **Typisierte Keys.** `messages/de.ts` ist die Quelle; `MessageKey` ist `keyof typeof de`.
+  `messages/en.ts` ist als `Record<MessageKey, string>` typisiert, ein fehlender oder zusätzlicher
+  Key fällt deshalb schon bei `pnpm check` auf.
+- **Kleine API.** `t(key, params)` ersetzt `{name}`-Platzhalter, `plural(count, one, other)`
+  wählt die passende Form und setzt `{count}` ein. `i18n.locale` ist ein `$state`;dadurch
+  aktualisieren sich Templates, abgeleitete Labels und `Intl`-Formate beim Umschalten sofort.
+- **Erkennung & Persistenz.** Gespeicherte Wahl (`phosphor:locale:v1`) → Browsersprache
+  (`de*` → Deutsch, sonst Englisch) → Deutsch. Die Wahl wird nur im Browser gelesen; serverseitig
+  (Tests/Build) bleibt der Fallback Deutsch. `i18n.init()` in `+layout.svelte` setzt außerdem
+  `document.documentElement.lang`.
+- **Formate folgen der Sprache.** `utils/time.ts` und `utils/format.ts` übergeben die aktuelle
+  Locale an `Intl.DateTimeFormat`, `Intl.RelativeTimeFormat` und `Intl.NumberFormat`. Dadurch
+  wechseln auch relative Zeiten, Datumsangaben und Zähler (z. B. `1.500` ↔ `1,500`).
+- **Umschalter.** Der Abschnitt **Sprache** in `/settings` bietet Deutsch und Englisch. Die
+  Auswahl wirkt ohne Reload und überlebt ihn.
+- **Testbarkeit.** Die E2E-Kontexte sind auf `locale: 'de-DE'` festgelegt, damit die
+  bestehenden deutschen Assertions unabhängig von der Locale des Testrechners bleiben;
+  `e2e/language.mjs` prüft zusätzlich den Umschalter, die Persistenz und die Zahlenformate.
+
 ## Neu laden per Wischen
 
 `PullToRefresh.svelte` sitzt in der App-Hülle (die Geste gilt für das Viewport, nicht für eine
@@ -670,12 +699,12 @@ Live-Vorschau. `'system'` lauscht auf `prefers-color-scheme` und folgt Änderung
 ✅ Medien-Lightbox für Bilder, Video-Overlay und Audio-Player,
 ✅ Instanz-Auswahl beim Login (eine App für beliebige GtS-Instanzen),
 ✅ Originalprofil/-beitrag öffnen und Link kopieren (Teilen/Embedden),
-✅ Erwähnungen im Beitragstext als interne Profillinks.
+✅ Erwähnungen im Beitragstext als interne Profillinks,
+✅ Deutsch/Englisch inkl. sprachabhängiger Datums- und Zahlenformate.
 
 ## Nächste Schritte
 
 1. **Offline-Cache** (der Service Worker existiert bereits für Push, cached aber bewusst nichts).
 2. **Barrierefreiheit** ausbauen und mit Screenreadern testen (Phanpys bekannte Schwäche).
-3. **i18n**: UI-Strings aus den Komponenten in Sprachdateien ziehen.
-4. **Link-Preview-Cards**: GtS 0.22 liefert `card` nie (kein OpenGraph-Fetch); die Anzeige
+3. **Link-Preview-Cards**: GtS 0.22 liefert `card` nie (kein OpenGraph-Fetch); die Anzeige
    in `StatusBody` ist fertig, bräuchte aber Server-/Proxy-Unterstützung.

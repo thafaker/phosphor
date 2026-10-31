@@ -54,6 +54,7 @@ async function swipe(cdp, page, { fromY, toY, steps = 12, x = 200 }) {
 		args: ['--no-sandbox']
 	});
 	const context = await browser.newContext({
+		locale: 'de-DE',
 		viewport: { width: 390, height: 780 },
 		hasTouch: true,
 		isMobile: true

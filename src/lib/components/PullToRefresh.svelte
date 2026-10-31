@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { t } from '#lib/i18n/index.svelte.ts';
 	import Icon from './Icon.svelte';
 
 	interface Props {
@@ -102,13 +103,7 @@
 	}
 
 	const ready = $derived(pull >= THRESHOLD);
-	const label = $derived(
-		busy
-			? 'Wird aktualisiert …'
-			: ready
-				? 'Loslassen zum Aktualisieren'
-				: 'Zum Aktualisieren ziehen'
-	);
+	const label = $derived(busy ? t('pull.busy') : ready ? t('pull.release') : t('pull.pull'));
 </script>
 
 <div

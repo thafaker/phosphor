@@ -43,7 +43,7 @@ Hinweise:
 ### Unit-Tests (ohne Konto, ohne Netz)
 
 ```bash
-pnpm test           # Vitest, 45 Tests
+pnpm test           # Vitest, 99 Tests
 pnpm check          # svelte-check
 pnpm lint           # Prettier + ESLint
 ```
@@ -73,18 +73,19 @@ BASE=http://127.0.0.1:4174 node e2e/notifications.mjs
 Die E2E-Tests **mocken die komplette API** (`**/api/**`) und melden eine
 Fake-Session an. Sie brauchen weder ein Konto noch Netzwerkzugriff. Abgedeckt sind:
 
-| Datei                   | Prüft                                                                   |
-| ----------------------- | ----------------------------------------------------------------------- |
-| `pull-to-refresh.mjs`   | Geste: Schwelle, Dämpfung, Scroll-/Seitenabgrenzung, Auslösung          |
-| `notifications.mjs`     | Filter-Tabs, Ungelesen-Zähler, einzeln/alle gelesen, Persistenz         |
-| `stream-buffering.mjs`  | Stream-Puffer: Scrollposition, Hinweis, Einfügen bei Timeline/Meldungen |
-| `composer-format.mjs`   | Markdown/Plain-Modus, Backslash-Erhalt, Favicon                         |
-| `emoji-picker.mjs`      | Emoji-Suche, Einfügen an der Cursorposition, POST-Body                  |
-| `login-instance.mjs`    | Instanz-Eingabe, Normalisierung, OAuth-Registrierung pro Instanz        |
-| `original-links.mjs`    | Originalprofil/-beitrag öffnen, Link kopieren (Teilen/Embedden)         |
-| `mentions.mjs`          | Erwähnungen intern verlinken; unbekannte bleiben extern                 |
-| `media-lightbox.mjs`    | Bild-Lightbox, Navigation, Fokus, Audio-Player, Custom-Emoji im Text    |
-| `image-compression.mjs` | Großes Foto wird vor dem Upload auf 1024 px/JPEG verkleinert            |
+| Datei                   | Prüft                                                                     |
+| ----------------------- | ------------------------------------------------------------------------- |
+| `pull-to-refresh.mjs`   | Geste: Schwelle, Dämpfung, Scroll-/Seitenabgrenzung, Auslösung            |
+| `notifications.mjs`     | Filter-Tabs, Ungelesen-Zähler, einzeln/alle gelesen, Persistenz           |
+| `stream-buffering.mjs`  | Stream-Puffer: Scrollposition, Hinweis, Einfügen bei Timeline/Meldungen   |
+| `composer-format.mjs`   | Markdown/Plain-Modus, Backslash-Erhalt, Favicon                           |
+| `emoji-picker.mjs`      | Emoji-Suche, Einfügen an der Cursorposition, POST-Body                    |
+| `login-instance.mjs`    | Instanz-Eingabe, Normalisierung, OAuth-Registrierung pro Instanz          |
+| `original-links.mjs`    | Originalprofil/-beitrag öffnen, Link kopieren (Teilen/Embedden)           |
+| `mentions.mjs`          | Erwähnungen intern verlinken; unbekannte bleiben extern                   |
+| `media-lightbox.mjs`    | Bild-Lightbox, Navigation, Fokus, Audio-Player, Custom-Emoji im Text      |
+| `image-compression.mjs` | Großes Foto wird vor dem Upload auf 1024 px/JPEG verkleinert              |
+| `language.mjs`          | Sprachwahl, Persistenz, `lang`-Attribut und sprachabhängige Zahlenformate |
 
 ## 4. Was nur manuell geht
 
@@ -115,5 +116,6 @@ Eine kurze manuelle Checkliste für einen Testdurchgang:
 8. Profil öffnen, folgen/entfolgen, stummschalten/blockieren.
 9. Originalprofil und Originalbeitrag öffnen (neuer Tab), beide Links kopieren.
 10. Erwähnung im Beitrag anklicken: Profil öffnet sich in Phosphor; unbekannte Erwähnung extern.
-11. Einstellungen: Theme, Schriftgröße, reduzierte Bewegung, Pull-to-Refresh (PWA).
+11. Einstellungen: Sprache (Deutsch/Englisch, Reload), Theme, Schriftgröße, reduzierte
+    Bewegung, Pull-to-Refresh (PWA).
 12. Push aktivieren und in einem zweiten Account eine Erwähnung auslösen.

@@ -67,7 +67,10 @@ function check(name, ok, detail = '') {
 		...(process.env.CHROME ? { executablePath: process.env.CHROME } : {}),
 		args: ['--no-sandbox']
 	});
-	const context = await browser.newContext({ viewport: { width: 900, height: 900 } });
+	const context = await browser.newContext({
+		locale: 'de-DE',
+		viewport: { width: 900, height: 900 }
+	});
 
 	let uploadBody = null;
 	await context.route('**/api/**', (route) => {

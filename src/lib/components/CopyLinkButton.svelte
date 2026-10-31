@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onDestroy } from 'svelte';
+	import { t } from '#lib/i18n/index.svelte.ts';
 	import { copyToClipboard } from '#lib/utils/clipboard.ts';
 	import Icon from './Icon.svelte';
 
@@ -13,13 +14,10 @@
 		class?: string;
 	}
 
-	let {
-		url,
-		label = 'Link kopieren',
-		copiedLabel = 'Kopiert',
-		title,
-		class: className = ''
-	}: Props = $props();
+	let { url, label, copiedLabel, title, class: className = '' }: Props = $props();
+
+	const idleLabel = $derived(label ?? t('common.copyLink'));
+	const doneLabel = $derived(copiedLabel ?? t('common.copied'));
 
 	let state = $state<'idle' | 'copied' | 'error'>('idle');
 	let timer: ReturnType<typeof setTimeout> | null = null;
@@ -36,15 +34,15 @@
 	}
 
 	const text = $derived(
-		state === 'copied' ? copiedLabel : state === 'error' ? 'Kopieren fehlgeschlagen' : label
+		state === 'copied' ? doneLabel : state === 'error' ? t('common.copyFailed') : idleLabel
 	);
 </script>
 
 <button
 	type="button"
 	class="inline-flex items-center gap-1.5 rounded-md text-xs transition hover:bg-accent/10 {className}"
-	title={title ?? label}
-	aria-label={title ?? label}
+	title={title ?? idleLabel}
+	aria-label={title ?? idleLabel}
 	onclick={copy}
 >
 	<Icon name={state === 'copied' ? 'check' : 'link'} size={14} />

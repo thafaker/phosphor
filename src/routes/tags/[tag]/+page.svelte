@@ -4,6 +4,7 @@
 	import Icon from '#lib/components/Icon.svelte';
 	import TimelineView from '#lib/components/TimelineView.svelte';
 	import { followHashtag, getHashtag, tagTimeline, unfollowHashtag } from '#lib/api/gotosocial.ts';
+	import { t } from '#lib/i18n/index.svelte.ts';
 	import type { Tag } from '#lib/api/types.ts';
 	import { TimelineFeed } from '#lib/stores/feed.svelte.ts';
 
@@ -69,13 +70,13 @@
 			onclick={toggleFollow}
 			disabled={followBusy}
 		>
-			{tag.following ? 'Entfolgen' : 'Folgen'}
+			{tag.following ? t('tags.unfollow') : t('tags.follow')}
 		</button>
 	{/if}
 </header>
 
 {#if loading}
-	<div class="p-4 text-ink-soft">Lade...</div>
+	<div class="p-4 text-ink-soft">{t('common.loading')}</div>
 {:else}
-	<TimelineView {feed} emptyText="Noch keine Beiträge zu diesem Hashtag." />
+	<TimelineView {feed} emptyText={t('tags.empty')} />
 {/if}

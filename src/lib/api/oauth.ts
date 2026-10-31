@@ -1,6 +1,7 @@
 import { APP_NAME, APP_WEBSITE, REDIRECT_PATH, SCOPES } from '#lib/config.ts';
 import { instance } from '#lib/instance.svelte.ts';
 import type { TokenResponse } from './types';
+import { t } from '#lib/i18n/index.svelte.ts';
 
 export interface RegisteredApp {
 	client_id: string;
@@ -26,7 +27,7 @@ export async function registerApp(): Promise<RegisteredApp> {
 			website: APP_WEBSITE
 		})
 	});
-	if (!res.ok) throw new Error(`App-Registrierung fehlgeschlagen (HTTP ${res.status})`);
+	if (!res.ok) throw new Error(t('auth.registerFailed', { status: res.status }));
 	const data = (await res.json()) as RegisteredApp;
 	return { client_id: data.client_id, client_secret: data.client_secret, scopes: SCOPES };
 }
@@ -58,7 +59,7 @@ export async function exchangeCode(code: string, app: RegisteredApp): Promise<To
 		})
 	});
 	if (!res.ok) {
-		let message = `Tokenaustausch fehlgeschlagen (HTTP ${res.status})`;
+		let message = t('auth.exchangeFailed', { status: res.status });
 		try {
 			const data = (await res.json()) as { error?: string; error_description?: string };
 			message = data.error_description ?? data.error ?? message;

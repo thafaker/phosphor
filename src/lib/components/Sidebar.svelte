@@ -2,25 +2,26 @@
 	import { page } from '$app/state';
 	import { session } from '#lib/auth/session.svelte.ts';
 	import { followRequests } from '#lib/stores/followRequests.svelte.ts';
+	import { t } from '#lib/i18n/index.svelte.ts';
 	import { notificationsFeed } from '#lib/stores/notifications.svelte.ts';
 	import { emojify } from '#lib/utils/text.ts';
 	import Avatar from './Avatar.svelte';
 	import Icon from './Icon.svelte';
 
 	const items = $derived([
-		{ href: '/', label: 'Start', icon: 'home' },
-		{ href: '/search', label: 'Suche', icon: 'search' },
-		{ href: '/notifications', label: 'Meldungen', icon: 'bell' },
+		{ href: '/', label: t('nav.home'), icon: 'home' },
+		{ href: '/search', label: t('nav.search'), icon: 'search' },
+		{ href: '/notifications', label: t('nav.notifications'), icon: 'bell' },
 		// Only worth a slot while the profile is private (only then can requests
 		// exist at all) or while some are actually waiting.
 		...(followRequests.pending > 0 || session.account?.locked
-			? [{ href: '/follow_requests', label: 'Anfragen', icon: 'user-plus' }]
+			? [{ href: '/follow_requests', label: t('nav.requests'), icon: 'user-plus' }]
 			: []),
-		{ href: '/local', label: 'Lokal', icon: 'globe' },
+		{ href: '/local', label: t('nav.local'), icon: 'globe' },
 		...(session.account
-			? [{ href: `/accounts/${session.account.id}`, label: 'Profil', icon: 'user' }]
+			? [{ href: `/accounts/${session.account.id}`, label: t('nav.profile'), icon: 'user' }]
 			: []),
-		{ href: '/settings', label: 'Einstellungen', icon: 'settings' }
+		{ href: '/settings', label: t('nav.settings'), icon: 'settings' }
 	]);
 
 	function isActive(href: string): boolean {
@@ -80,7 +81,7 @@
 		class="hidden items-center justify-center gap-2 rounded-full bg-accent px-4 py-2.5 font-semibold text-accent-ink transition hover:bg-accent/90 md:mt-2 md:flex"
 	>
 		<Icon name="plus" size={18} />
-		Beitrag
+		{t('nav.newPost')}
 	</a>
 
 	<div class="hidden md:mt-auto md:block">
@@ -89,7 +90,7 @@
 				<a
 					href={`/accounts/${session.account.id}`}
 					class="flex min-w-0 flex-1 items-center gap-2 rounded-lg hover:opacity-80"
-					title="Eigenes Profil"
+					title={t('nav.ownProfile')}
 				>
 					<Avatar src={session.account.avatar_static} alt={session.account.username} size={36} />
 					<div class="min-w-0 flex-1">
@@ -101,7 +102,7 @@
 					type="button"
 					onclick={() => session.logout()}
 					class="rounded-md p-1.5 text-ink-faint hover:bg-accent/10 hover:text-ink-strong"
-					title="Abmelden"
+					title={t('nav.logout')}
 				>
 					<Icon name="logout" size={18} />
 				</button>

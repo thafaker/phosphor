@@ -42,6 +42,8 @@ vorbelegen (siehe `.env.example`).
 - [x] Push-Benachrichtigungen per Web Push — ohne externen Relay, inkl. neuer Beiträge
       gefolgter Accounts (dort je Account über die „Glocke“ aktivierbar)
 - [x] Erscheinungsbild: Hell / Dunkel / System
+- [x] i18n: Deutsch und Englisch, umschaltbar in den Einstellungen; Datums- und
+      Zahlenformate folgen der Sprache
 - [x] Barrierefreie Schriftgröße (100 % – 200 %), wirkt auf die ganze App
 - [x] Reduzierte Bewegung (Systemeinstellung oder erzwungen)
 - [x] Installierbar als App (PWA-Manifest + Icons) für den Home-Bildschirm
@@ -50,7 +52,6 @@ vorbelegen (siehe `.env.example`).
 
 - [ ] Offline-Cache (der Service Worker existiert bereits für Push, cached aber bewusst nichts)
 - [ ] Barrierefreiheit ausbauen und mit Screenreadern testen
-- [ ] i18n: UI-Strings aus den Komponenten in Sprachdateien ziehen
 - [ ] Link-Preview-Cards — blockiert: GtS 0.22 liefert `card` nie (kein OpenGraph-Fetch);
       die Anzeige in `StatusBody` ist fertig, bräuchte aber Server-/Proxy-Unterstützung
 

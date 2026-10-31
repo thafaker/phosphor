@@ -6,6 +6,7 @@
 	import TimelineView from '#lib/components/TimelineView.svelte';
 	import { search } from '#lib/api/gotosocial.ts';
 	import type { Account, Tag } from '#lib/api/types.ts';
+	import { plural, t } from '#lib/i18n/index.svelte.ts';
 	import { TimelineFeed } from '#lib/stores/feed.svelte.ts';
 	import { emojify } from '#lib/utils/text.ts';
 
@@ -40,7 +41,7 @@
 				hashtags = res.hashtags;
 				searched = true;
 			} catch (err) {
-				error = err instanceof Error ? err.message : 'Suche fehlgeschlagen';
+				error = err instanceof Error ? err.message : t('search.failed');
 			} finally {
 				loading = false;
 			}
@@ -78,7 +79,7 @@
 <header class="sticky top-0 z-20 border-b border-line bg-canvas/85 px-4 py-3 backdrop-blur">
 	<h1 class="flex items-center gap-2 text-lg font-semibold tracking-tight text-ink-strong">
 		<Icon name="search" size={18} class="text-accent" />
-		Suche
+		{t('search.title')}
 	</h1>
 </header>
 
@@ -87,7 +88,7 @@
 		<input
 			class="w-full rounded-lg border border-line bg-surface px-3 py-2 text-ink-strong placeholder:text-ink-faint focus:border-accent/40 focus:outline-none"
 			type="search"
-			placeholder="Suche nach Personen, Hashtags oder Beiträgen..."
+			placeholder={t('search.placeholder')}
 			bind:value={query}
 		/>
 		<button class="rounded-lg bg-accent/10 px-3 py-2 text-accent hover:bg-accent/20" type="submit">
@@ -100,25 +101,25 @@
 			class="rounded px-2 py-1 {tab === 'all' ? 'bg-accent/10 text-accent' : 'text-ink-soft'}"
 			onclick={() => (tab = 'all')}
 		>
-			Alle
+			{t('search.tab.all')}
 		</button>
 		<button
 			class="rounded px-2 py-1 {tab === 'accounts' ? 'bg-accent/10 text-accent' : 'text-ink-soft'}"
 			onclick={() => (tab = 'accounts')}
 		>
-			Personen
+			{t('search.tab.accounts')}
 		</button>
 		<button
 			class="rounded px-2 py-1 {tab === 'hashtags' ? 'bg-accent/10 text-accent' : 'text-ink-soft'}"
 			onclick={() => (tab = 'hashtags')}
 		>
-			Hashtags
+			{t('search.tab.hashtags')}
 		</button>
 		<button
 			class="rounded px-2 py-1 {tab === 'statuses' ? 'bg-accent/10 text-accent' : 'text-ink-soft'}"
 			onclick={() => (tab = 'statuses')}
 		>
-			Beiträge
+			{t('search.tab.statuses')}
 		</button>
 	</div>
 </div>
@@ -130,13 +131,13 @@
 {/if}
 
 {#if loading}
-	<div class="p-4 text-ink-soft">Suche...</div>
+	<div class="p-4 text-ink-soft">{t('search.loading')}</div>
 {/if}
 
 {#if !loading && searched && query.trim().length >= 2}
 	{#if tab === 'all' || tab === 'accounts'}
 		{#if accounts.length > 0}
-			<div class="px-4 pt-3 pb-2 text-sm font-semibold text-ink-strong">Personen</div>
+			<div class="px-4 pt-3 pb-2 text-sm font-semibold text-ink-strong">{t('search.people')}</div>
 			{#each accounts as acc (acc.id)}
 				<button
 					class="flex w-full items-center gap-3 border-b border-line px-4 py-3 text-left hover:bg-surface/50"
@@ -158,7 +159,7 @@
 
 	{#if tab === 'all' || tab === 'hashtags'}
 		{#if hashtags.length > 0}
-			<div class="px-4 pt-3 pb-2 text-sm font-semibold text-ink-strong">Hashtags</div>
+			<div class="px-4 pt-3 pb-2 text-sm font-semibold text-ink-strong">{t('search.hashtags')}</div>
 			{#each hashtags as tag (tag.name)}
 				<button
 					class="flex w-full items-center gap-3 border-b border-line px-4 py-3 text-left hover:bg-surface/50"
@@ -173,7 +174,11 @@
 						<div class="font-medium text-ink-strong">#{tag.name}</div>
 						{#if tag.history}
 							<div class="text-xs text-ink-faint">
-								{tag.history.reduce((sum, h) => sum + parseInt(h.uses || '0'), 0)} Beiträge
+								{plural(
+									tag.history.reduce((sum, h) => sum + parseInt(h.uses || '0'), 0),
+									'search.posts.one',
+									'search.posts.other'
+								)}
 							</div>
 						{/if}
 					</div>
@@ -183,14 +188,14 @@
 	{/if}
 
 	{#if tab === 'statuses'}
-		<TimelineView feed={statusFeed} emptyText="Keine Beiträge gefunden." />
+		<TimelineView feed={statusFeed} emptyText={t('search.noStatuses')} />
 	{/if}
 
 	{#if tab === 'all' && accounts.length === 0 && hashtags.length === 0}
-		<div class="p-4 text-ink-soft">Keine Ergebnisse gefunden.</div>
+		<div class="p-4 text-ink-soft">{t('search.noResults')}</div>
 	{/if}
 {/if}
 
 {#if query.trim().length < 2 && !searched}
-	<div class="p-4 text-ink-soft">Gib mindestens 2 Zeichen ein.</div>
+	<div class="p-4 text-ink-soft">{t('search.minChars')}</div>
 {/if}

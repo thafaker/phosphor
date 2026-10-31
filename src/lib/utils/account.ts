@@ -1,4 +1,5 @@
 import type { Account, Relationship } from '#lib/api/types.ts';
+import { t } from '#lib/i18n/index.svelte.ts';
 
 export type FollowIntent = 'follow' | 'unfollow';
 
@@ -28,7 +29,7 @@ export function followIntent(relationship: Relationship | null): FollowIntent {
 
 /** Button label, reflecting the current following / pending state. */
 export function followLabel(relationship: Relationship | null): string {
-	if (relationship?.following) return 'Entfolgen';
-	if (relationship?.requested) return 'Angefragt';
-	return 'Folgen';
+	if (relationship?.following) return t('common.unfollow');
+	if (relationship?.requested) return t('common.requested');
+	return t('common.follow');
 }

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Account, Relationship } from '#lib/api/types.ts';
+	import { t } from '#lib/i18n/index.svelte.ts';
 	import { followLabel } from '#lib/utils/account.ts';
 	import { formatStat } from '#lib/utils/format.ts';
 	import { instanceHost } from '#lib/utils/instance.ts';
@@ -95,7 +96,7 @@
 							class="rounded-full bg-accent px-4 py-1.5 text-sm font-semibold text-accent-ink transition hover:bg-accent/90 disabled:cursor-not-allowed disabled:opacity-50"
 							onclick={() => onAcceptRequest?.()}
 						>
-							Annehmen
+							{t('common.accept')}
 						</button>
 						<button
 							type="button"
@@ -103,13 +104,13 @@
 							class="rounded-full border border-line px-4 py-1.5 text-sm text-ink transition hover:bg-danger/10 hover:text-danger disabled:cursor-not-allowed disabled:opacity-50"
 							onclick={() => onRejectRequest?.()}
 						>
-							Ablehnen
+							{t('common.reject')}
 						</button>
 					{:else}
 						<button
 							type="button"
 							disabled={moderationBusy || !relationship}
-							title={relationship?.muting ? 'Nicht mehr stummschalten' : 'Stummschalten'}
+							title={relationship?.muting ? t('common.unmute') : t('common.mute')}
 							aria-pressed={muted}
 							class="flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm transition disabled:cursor-not-allowed disabled:opacity-50 {muted
 								? 'border-warn/50 bg-warn/10 text-warn'
@@ -117,7 +118,7 @@
 							onclick={() => onToggleMute?.()}
 						>
 							<Icon name="volume-off" size={15} />
-							Stumm
+							{t('common.mute')}
 						</button>
 
 						<div class="relative">
@@ -125,7 +126,7 @@
 								type="button"
 								disabled={busy}
 								title={relationship?.requested && !relationship.following
-									? 'Anfrage zurückziehen'
+									? t('account.withdrawRequest')
 									: label}
 								onclick={onToggleFollow}
 								class="rounded-full px-4 py-1.5 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50 {following
@@ -137,8 +138,8 @@
 
 							<button
 								type="button"
-								title="Weitere Aktionen"
-								aria-label="Weitere Aktionen"
+								title={t('account.moreActions')}
+								aria-label={t('account.moreActions')}
 								aria-expanded={menuOpen}
 								onclick={() => (menuOpen = !menuOpen)}
 								class="ml-1 rounded-md p-1.5 text-ink-soft hover:bg-accent/10 hover:text-ink-strong"
@@ -165,7 +166,7 @@
 											onToggleMute?.();
 										}}
 									>
-										{relationship?.muting ? 'Nicht mehr stummschalten' : 'Stummschalten'}
+										{relationship?.muting ? t('common.unmute') : t('common.mute')}
 									</button>
 									<button
 										type="button"
@@ -179,7 +180,7 @@
 											else confirmingBlock = true;
 										}}
 									>
-										{relationship?.blocking ? 'Blockierung aufheben' : 'Blockieren'}
+										{relationship?.blocking ? t('common.unblock') : t('common.block')}
 									</button>
 								</div>
 							{/if}
@@ -195,39 +196,39 @@
 				<span
 					class="rounded-full border border-line px-2 py-0.5 text-[calc(11px*var(--text-scale))] text-ink-faint"
 				>
-					Du
+					{t('common.you')}
 				</span>
 			{/if}
 			{#if account.bot}
 				<span
 					class="rounded-full border border-accent/40 px-2 py-0.5 text-[calc(11px*var(--text-scale))] text-accent"
 				>
-					Bot
+					{t('common.bot')}
 				</span>
 			{/if}
 			{#if account.locked}
 				<span
 					class="flex items-center gap-1 rounded-md border border-line px-1.5 py-0.5 text-[calc(11px*var(--text-scale))] text-ink-soft"
-					title="Profil ist privat ✱ Folgeanfragen müssen bestätigt werden"
+					title={t('account.privateTitle')}
 				>
 					<Icon name="lock" size={12} />
-					Privat
+					{t('common.private')}
 				</span>
 			{/if}
 			{#if relationship?.followed_by && !isSelf}
 				<span
 					class="rounded-md bg-accent/10 px-1.5 py-0.5 text-[calc(11px*var(--text-scale))] text-accent"
 				>
-					Folgt dir
+					{t('common.followsYou')}
 				</span>
 			{/if}
 			{#if muted}
 				<span
 					class="flex items-center gap-1 rounded-md border border-warn/40 bg-warn/10 px-1.5 py-0.5 text-[calc(11px*var(--text-scale))] text-warn"
-					title="Beiträge und Meldungen dieser Person sind ausgeblendet"
+					title={t('account.mutedTitle')}
 				>
 					<Icon name="volume-off" size={12} />
-					Stummgeschaltet
+					{t('common.muted')}
 				</span>
 			{/if}
 			{#if blocked}
@@ -235,16 +236,16 @@
 					class="flex items-center gap-1 rounded-md border border-danger/40 bg-danger/10 px-1.5 py-0.5 text-[calc(11px*var(--text-scale))] text-danger"
 				>
 					<Icon name="slash" size={12} />
-					Blockiert
+					{t('common.blocked')}
 				</span>
 			{/if}
 			{#if blockedBy}
 				<span
 					class="flex items-center gap-1 rounded-md border border-line px-1.5 py-0.5 text-[calc(11px*var(--text-scale))] text-ink-soft"
-					title="Diese Person blockiert dich — ihr könnt euch nicht folgen und keine Beiträge sehen"
+					title={t('account.blockedByTitle')}
 				>
 					<Icon name="slash" size={12} />
-					Hat dich blockiert
+					{t('common.blockedYou')}
 				</span>
 			{/if}
 		</div>
@@ -255,8 +256,8 @@
 				href={account.url}
 				target="_blank"
 				rel="noopener noreferrer"
-				title={`Profil auf ${urlHost} öffnen`}
-				aria-label={`Profil auf ${urlHost} öffnen`}
+				title={t('account.openOn', { host: urlHost })}
+				aria-label={t('account.openOn', { host: urlHost })}
 				class="rounded p-0.5 transition hover:bg-accent/10 hover:text-ink-strong"
 			>
 				<Icon name="link-out" size={13} />
@@ -291,13 +292,16 @@
 
 		<p class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-ink-soft">
 			<span
-				><strong class="text-ink-strong">{formatStat(account.statuses_count)}</strong> Beiträge</span
+				><strong class="text-ink-strong">{formatStat(account.statuses_count)}</strong>
+				{t('account.stats.posts')}</span
 			>
 			<span
-				><strong class="text-ink-strong">{formatStat(account.following_count)}</strong> Folgt</span
+				><strong class="text-ink-strong">{formatStat(account.following_count)}</strong>
+				{t('account.stats.following')}</span
 			>
 			<span
-				><strong class="text-ink-strong">{formatStat(account.followers_count)}</strong> Follower</span
+				><strong class="text-ink-strong">{formatStat(account.followers_count)}</strong>
+				{t('account.stats.followers')}</span
 			>
 		</p>
 
@@ -306,7 +310,7 @@
 		{/if}
 
 		<p class="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-ink-faint">
-			<span>Beigetreten am {absoluteDate(account.created_at)}</span>
+			<span>{t('account.joined', { date: absoluteDate(account.created_at) })}</span>
 			<a
 				href={account.url}
 				target="_blank"
@@ -314,12 +318,12 @@
 				class="flex items-center gap-1 hover:text-ink-strong"
 			>
 				<Icon name="link-out" size={13} />
-				Auf {urlHost} öffnen
+				{t('account.openHost', { host: urlHost })}
 			</a>
 			<CopyLinkButton
 				url={account.url}
-				label="Profil-Link"
-				title={`Link zum Profil von @${account.acct} kopieren`}
+				label={t('common.profileLink')}
+				title={t('account.copyProfileTitle', { acct: account.acct })}
 				class="border border-line px-2 py-1 text-ink-soft hover:text-ink-strong"
 			/>
 		</p>
@@ -327,9 +331,9 @@
 
 	{#if confirmingBlock}
 		<ConfirmDialog
-			title={`@${account.acct} blockieren?`}
-			body="Die Person kann dir nicht mehr folgen, dir keine Beiträge mehr schicken und sieht deine Beiträge nicht mehr. Eine bestehende Verbindung wird getrennt. Du kannst die Blockierung jederzeit aufheben."
-			confirmLabel="Blockieren"
+			title={t('account.blockQuestion', { acct: account.acct })}
+			body={t('account.blockBody')}
+			confirmLabel={t('common.block')}
 			danger
 			onConfirm={() => onToggleBlock?.()}
 			onClose={() => (confirmingBlock = false)}

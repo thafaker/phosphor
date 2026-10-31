@@ -50,7 +50,10 @@ function check(name, ok, detail = '') {
 		...(process.env.CHROME ? { executablePath: process.env.CHROME } : {}),
 		args: ['--no-sandbox']
 	});
-	const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+	const context = await browser.newContext({
+		locale: 'de-DE',
+		viewport: { width: 1280, height: 900 }
+	});
 	let emojiRequests = 0;
 	let posted = null;
 

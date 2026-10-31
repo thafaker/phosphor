@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Status } from '#lib/api/types.ts';
+	import { t } from '#lib/i18n/index.svelte.ts';
 	import type { TimelineFeed } from '#lib/stores/feed.svelte.ts';
 	import Icon from './Icon.svelte';
 	import NewItemsPill from './NewItemsPill.svelte';
@@ -15,12 +16,10 @@
 		onDeleted?: (id: string) => void;
 	}
 
-	let {
-		feed,
-		emptyText = 'Hier ist noch nichts.',
-		emptyHint = 'Folge ein paar Leuten — GoToSocial zeigt dir nur neue Beiträge, keine alten.',
-		onDeleted
-	}: Props = $props();
+	let { feed, emptyText, emptyHint, onDeleted }: Props = $props();
+
+	const emptyLine = $derived(emptyText ?? t('timeline.empty'));
+	const hintLine = $derived(emptyHint ?? t('timeline.emptyHint'));
 
 	let sentinel: HTMLDivElement | undefined = $state();
 
@@ -94,8 +93,8 @@
 
 <NewItemsPill
 	count={feed.pending.length}
-	singular="neuer Beitrag"
-	plural="neue Beiträge"
+	singular={t('timeline.newPost')}
+	plural={t('timeline.newPosts')}
 	onclick={showPending}
 />
 
@@ -110,7 +109,7 @@
 			class="rounded-md border border-danger/40 px-2 py-1 text-xs hover:bg-danger/10"
 			onclick={() => feed.load(true)}
 		>
-			Erneut versuchen
+			{t('common.retry')}
 		</button>
 	</div>
 {/if}
@@ -132,9 +131,9 @@
 {:else if !feed.items.length && feed.loaded}
 	<div class="px-6 py-16 text-center text-ink-faint">
 		<Icon name="sparkles" size={28} class="mx-auto mb-3 text-ink-soft" />
-		<p>{emptyText}</p>
-		{#if emptyHint}
-			<p class="mt-1 text-sm">{emptyHint}</p>
+		<p>{emptyLine}</p>
+		{#if hintLine}
+			<p class="mt-1 text-sm">{hintLine}</p>
 		{/if}
 	</div>
 {:else}

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { MediaDraft } from '#lib/utils/media.ts';
+	import { t } from '#lib/i18n/index.svelte.ts';
 	import { formatBytes } from '#lib/utils/media.ts';
 	import Icon from './Icon.svelte';
 
@@ -69,12 +70,12 @@
 							onDescribe(draft, (event.currentTarget as HTMLTextAreaElement).value)}
 						maxlength={descriptionLimit}
 						rows={2}
-						placeholder="Bildbeschreibung (ALT) – wichtig für Screenreader"
-						aria-label="Bildbeschreibung"
+						placeholder={t('media.altPlaceholder')}
+						aria-label={t('media.altLabel')}
 						class="w-full resize-none rounded-md border border-line bg-surface px-2 py-1 text-sm text-ink placeholder-ink-faint outline-none focus:border-accent/60"
 					></textarea>
 					{#if draft.preparing}
-						<p class="mt-0.5 text-xs text-ink-faint">Wird komprimiert…</p>
+						<p class="mt-0.5 text-xs text-ink-faint">{t('media.compressing')}</p>
 					{:else if draft.originalSize && draft.originalSize > draft.file.size}
 						<p class="mt-0.5 text-xs text-ink-faint">
 							{formatBytes(draft.originalSize)} → {formatBytes(draft.file.size)}
@@ -87,8 +88,8 @@
 
 				<button
 					type="button"
-					title="Anhang entfernen"
-					aria-label="Anhang entfernen"
+					title={t('media.removeAttachment')}
+					aria-label={t('media.removeAttachment')}
 					{disabled}
 					class="self-start rounded-md p-1 text-ink-soft hover:bg-accent/10 hover:text-danger disabled:opacity-40"
 					onclick={() => onRemove(draft)}
@@ -105,12 +106,12 @@
 	<button
 		type="button"
 		disabled={disabled || full}
-		title={full ? `Maximal ${limit} Anhänge` : 'Bild, Video oder Audio anhängen'}
+		title={full ? t('media.maxAttachments', { limit }) : t('media.attach')}
 		class="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-ink-soft hover:bg-accent/10 disabled:cursor-not-allowed disabled:opacity-40"
 		onclick={() => inputEl?.click()}
 	>
 		<Icon name="image" size={15} />
-		Anhang
+		{t('common.attachment')}
 		{#if drafts.length}
 			<span class="tabular-nums">({drafts.length}/{limit})</span>
 		{/if}

@@ -1,4 +1,5 @@
 import type { InstanceLimits, MediaType } from '#lib/api/types.ts';
+import { t } from '#lib/i18n/index.svelte.ts';
 
 /**
  * An attachment staged in the composer, before the status is sent.
@@ -71,13 +72,13 @@ export function validateMediaFile(
 	options: { allowOversizeImages?: boolean } = {}
 ): string | null {
 	if (limits.supportedMediaTypes.length && !limits.supportedMediaTypes.includes(file.type)) {
-		return `Nicht unterstützter Dateityp: ${file.type || file.name}`;
+		return t('media.unsupportedType', { type: file.type || file.name });
 	}
 	if (options.allowOversizeImages && file.type.startsWith('image/')) return null;
 	const isVideo = file.type.startsWith('video/') || file.type.startsWith('audio/');
 	const limit = isVideo ? limits.videoSizeLimit : limits.imageSizeLimit;
 	if (limit > 0 && file.size > limit) {
-		return `Datei ist zu groß (max. ${formatBytes(limit)}).`;
+		return t('media.tooLarge', { limit: formatBytes(limit) });
 	}
 	return null;
 }

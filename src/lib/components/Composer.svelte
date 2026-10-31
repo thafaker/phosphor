@@ -3,6 +3,7 @@
 	import { postStatus, uploadMedia } from '#lib/api/gotosocial.ts';
 	import type { Status, Visibility } from '#lib/api/types.ts';
 	import { session } from '#lib/auth/session.svelte.ts';
+	import { t } from '#lib/i18n/index.svelte.ts';
 	import { preferences } from '#lib/stores/preferences.svelte.ts';
 	import { compressImage } from '#lib/utils/image.ts';
 	import {
@@ -25,12 +26,9 @@
 		onPosted?: (status: Status) => void;
 	}
 
-	let {
-		inReplyTo = null,
-		placeholder = 'Was gibt es Neues?',
-		autofocus = false,
-		onPosted
-	}: Props = $props();
+	let { inReplyTo = null, placeholder, autofocus = false, onPosted }: Props = $props();
+
+	const placeholderText = $derived(placeholder ?? t('composer.placeholder'));
 
 	let text = $state('');
 	let cwEnabled = $state(false);
@@ -117,7 +115,7 @@
 		const added: MediaDraft[] = [];
 		for (const file of Array.from(files)) {
 			if (drafts.length + added.length >= session.limits.maxMediaAttachments) {
-				error = `Maximal ${session.limits.maxMediaAttachments} Anhänge pro Beitrag.`;
+				error = t('composer.maxAttachments', { limit: session.limits.maxMediaAttachments });
 				break;
 			}
 			// Photos over the instance limit may still fit after compression; the
@@ -207,7 +205,7 @@
 					});
 					draft.id = media.id;
 				} catch (err) {
-					draft.error = err instanceof Error ? err.message : 'Upload fehlgeschlagen.';
+					draft.error = err instanceof Error ? err.message : t('composer.uploadFailed');
 					throw err;
 				} finally {
 					draft.uploading = false;
@@ -244,7 +242,7 @@
 		error = null;
 		try {
 			if (!(await uploadDrafts())) {
-				error = 'Mindestens ein Anhang konnte nicht hochgeladen werden.';
+				error = t('composer.attachmentUploadFailed');
 				return;
 			}
 			const created = await postStatus({
@@ -259,7 +257,7 @@
 			reset();
 			onPosted?.(created);
 		} catch (err) {
-			error = err instanceof Error ? err.message : 'Beitrag konnte nicht gesendet werden.';
+			error = err instanceof Error ? err.message : t('composer.postFailed');
 		} finally {
 			submitting = false;
 		}
@@ -300,7 +298,8 @@
 <section class="border-b border-line px-4 py-3">
 	{#if inReplyTo}
 		<p class="mb-2 text-sm text-ink-soft">
-			Antwort an {@html replyName}
+			{t('composer.replyingTo')}
+			{@html replyName}
 		</p>
 	{/if}
 
@@ -316,7 +315,7 @@
 				<input
 					type="text"
 					bind:value={spoilerText}
-					placeholder="Inhaltswarnung (CW)"
+					placeholder={t('composer.cwPlaceholder')}
 					class="mb-2 w-full rounded-md border border-warn/30 bg-inset px-3 py-1.5 text-sm text-warn placeholder-ink-faint outline-none focus:border-warn/60"
 				/>
 			{/if}
@@ -325,7 +324,7 @@
 			<textarea
 				bind:this={textareaEl}
 				bind:value={text}
-				{placeholder}
+				placeholder={placeholderText}
 				{autofocus}
 				rows={inReplyTo ? 2 : 3}
 				onkeydown={onKeydown}
@@ -334,8 +333,9 @@
 
 			{#if showEscapingHint}
 				<p class="mt-1 text-xs text-ink-faint">
-					Markdown ist aktiv: <code class="rounded bg-inset px-1">\</code> maskiert Sonderzeichen.
-					Für einen sichtbaren Backslash <code class="rounded bg-inset px-1">\\</code> schreiben.
+					{t('composer.escapeBefore')} <code class="rounded bg-inset px-1">\</code>
+					{t('composer.escapeMiddle')} <code class="rounded bg-inset px-1">\\</code>
+					{t('composer.escapeAfter')}
 				</p>
 			{/if}
 
@@ -357,7 +357,7 @@
 						? 'text-warn'
 						: 'text-ink-soft'}"
 					onclick={() => (cwEnabled = !cwEnabled)}
-					title="Inhaltswarnung"
+					title={t('composer.cwTitle')}
 				>
 					<Icon name="alert" size={15} />
 					CW
@@ -369,7 +369,7 @@
 						? 'text-accent'
 						: 'text-ink-soft'}"
 					onclick={toggleMarkdown}
-					title="Markdown-Formatierung {markdown ? 'ausschalten' : 'einschalten'}"
+					title={t(markdown ? 'composer.markdownDisable' : 'composer.markdownEnable')}
 					aria-pressed={markdown}
 				>
 					<span class="font-mono text-[11px] font-bold">MD</span>
@@ -384,10 +384,10 @@
 							? 'text-warn'
 							: 'text-ink-soft'}"
 						onclick={() => (sensitive = !sensitive)}
-						title="Medien als sensibel markieren"
+						title={t('composer.sensitiveTitle')}
 					>
 						<Icon name="eye" size={15} />
-						Sensibel
+						{t('common.sensitive')}
 					</button>
 				{/if}
 
@@ -397,10 +397,10 @@
 						bind:value={visibility}
 						class="cursor-pointer rounded-md bg-transparent py-1 pr-1 text-xs text-ink outline-none hover:bg-accent/10"
 					>
-						<option value="public">Öffentlich</option>
-						<option value="unlisted">Nicht gelistet</option>
-						<option value="private">Nur Follower</option>
-						<option value="direct">Direkt</option>
+						<option value="public">{t('common.visibility.public')}</option>
+						<option value="unlisted">{t('common.visibility.unlisted')}</option>
+						<option value="private">{t('common.visibility.private')}</option>
+						<option value="direct">{t('common.visibility.direct')}</option>
 					</select>
 				</label>
 
@@ -422,12 +422,12 @@
 				>
 					<Icon name="send" size={15} />
 					{preparing
-						? 'Bereitet vor…'
+						? t('composer.preparing')
 						: uploading
-							? 'Lädt hoch…'
+							? t('composer.uploading')
 							: submitting
-								? 'Sendet…'
-								: 'Posten'}
+								? t('composer.sending')
+								: t('composer.post')}
 				</button>
 			</div>
 

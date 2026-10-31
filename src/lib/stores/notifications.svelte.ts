@@ -1,5 +1,6 @@
 import { getNotifications, type TimelineParams } from '#lib/api/gotosocial.ts';
 import type { Notification, Status } from '#lib/api/types.ts';
+import { t } from '#lib/i18n/index.svelte.ts';
 
 const PAGE_SIZE = 20;
 
@@ -108,8 +109,7 @@ export class NotificationsFeed {
 			this.pending = [];
 			this.loaded = true;
 		} catch (err) {
-			this.error =
-				err instanceof Error ? err.message : 'Benachrichtigungen konnten nicht geladen werden.';
+			this.error = err instanceof Error ? err.message : t('notifications.loadFailed');
 		} finally {
 			this.loading = false;
 		}
@@ -125,10 +125,7 @@ export class NotificationsFeed {
 			const older = await this.loader({ limit: PAGE_SIZE, maxId: oldest });
 			this.items = dedupe([...this.items, ...older]);
 		} catch (err) {
-			this.error =
-				err instanceof Error
-					? err.message
-					: 'Ältere Benachrichtigungen konnten nicht geladen werden.';
+			this.error = err instanceof Error ? err.message : t('notifications.loadMoreFailed');
 		} finally {
 			this.loading = false;
 		}

@@ -8,6 +8,7 @@
 	import StatusCard from '#lib/components/StatusCard.svelte';
 	import { getContext, getStatus } from '#lib/api/gotosocial.ts';
 	import type { Status } from '#lib/api/types.ts';
+	import { t } from '#lib/i18n/index.svelte.ts';
 	import { refreshEvent } from '#lib/stores/refresh.svelte.ts';
 	import { streamer } from '#lib/stores/streamer.svelte.ts';
 	import {
@@ -39,7 +40,7 @@
 			ancestors = context.ancestors;
 			descendants = context.descendants;
 		} catch (err) {
-			error = err instanceof Error ? err.message : 'Beitrag konnte nicht geladen werden.';
+			error = err instanceof Error ? err.message : t('statusPage.loadFailed');
 		} finally {
 			loading = false;
 		}
@@ -158,11 +159,11 @@
 	<a
 		href="/"
 		class="rounded-md p-1 text-ink-soft hover:bg-accent/10 hover:text-ink-strong"
-		aria-label="Zurück"
+		aria-label={t('common.back')}
 	>
 		<Icon name="chevron-left" size={20} />
 	</a>
-	<h1 class="text-lg font-semibold tracking-tight text-ink-strong">Beitrag</h1>
+	<h1 class="text-lg font-semibold tracking-tight text-ink-strong">{t('statusPage.title')}</h1>
 </header>
 
 {#if loading}
@@ -203,7 +204,11 @@
 		/>
 	{/if}
 
-	<Composer inReplyTo={status} placeholder="Antwort schreiben…" onPosted={onReplyPosted} />
+	<Composer
+		inReplyTo={status}
+		placeholder={t('composer.replyPlaceholder')}
+		onPosted={onReplyPosted}
+	/>
 
 	{#each descendants as descendant (descendant.id)}
 		<StatusCard

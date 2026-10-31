@@ -1,5 +1,6 @@
 import { ApiError, apiRequest } from '#lib/api/client.ts';
 import type { InstanceV2 } from '#lib/api/types.ts';
+import { t } from '#lib/i18n/index.svelte.ts';
 
 const SW_PATH = '/sw.js';
 const SUBSCRIPTION_PATH = '/api/v1/push/subscription';
@@ -81,7 +82,7 @@ class PushStore {
 			const permission =
 				Notification.permission === 'granted' ? 'granted' : await Notification.requestPermission();
 			if (permission !== 'granted') {
-				throw new Error('Benachrichtigungen wurden nicht erlaubt.');
+				throw new Error(t('push.denied'));
 			}
 
 			await navigator.serviceWorker.register(SW_PATH);
@@ -134,7 +135,7 @@ class PushStore {
 	private async vapidKey(): Promise<string> {
 		const instance = await apiRequest<InstanceV2>('/api/v2/instance');
 		const key = instance.configuration?.vapid?.public_key;
-		if (!key) throw new Error('Die Instanz stellt keinen Web-Push-Schlüssel bereit.');
+		if (!key) throw new Error(t('push.noKey'));
 		return key;
 	}
 
@@ -167,13 +168,11 @@ class PushStore {
 	private describe(err: unknown): string {
 		if (err instanceof ApiError) {
 			if (err.status === 401 || err.status === 403) {
-				return 'Dein Login ist zu alt für Push-Benachrichtigungen. Bitte melde dich einmal neu an.';
+				return t('push.staleLogin');
 			}
 			return err.message;
 		}
-		return err instanceof Error
-			? err.message
-			: 'Push-Benachrichtigungen konnten nicht geändert werden.';
+		return err instanceof Error ? err.message : t('push.changeFailed');
 	}
 }
 

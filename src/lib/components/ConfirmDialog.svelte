@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { t } from '#lib/i18n/index.svelte.ts';
 	import Icon from './Icon.svelte';
 
 	interface Props {
@@ -12,14 +13,9 @@
 		onClose: () => void;
 	}
 
-	let {
-		title,
-		body = '',
-		confirmLabel = 'Bestätigen',
-		danger = false,
-		onConfirm,
-		onClose
-	}: Props = $props();
+	let { title, body = '', confirmLabel, danger = false, onConfirm, onClose }: Props = $props();
+
+	const confirmText = $derived(confirmLabel ?? t('common.confirm'));
 
 	let dialogEl = $state<HTMLDialogElement | null>(null);
 	let busy = $state(false);
@@ -40,7 +36,7 @@
 			await onConfirm();
 			dialogEl?.close();
 		} catch (err) {
-			error = err instanceof Error ? err.message : 'Aktion fehlgeschlagen.';
+			error = err instanceof Error ? err.message : t('common.actionFailed');
 		} finally {
 			busy = false;
 		}
@@ -84,7 +80,7 @@
 				class="rounded-full px-3.5 py-1.5 text-sm text-ink-soft hover:bg-accent/10 hover:text-ink-strong disabled:opacity-40"
 				onclick={() => dialogEl?.close()}
 			>
-				Abbrechen
+				{t('common.cancel')}
 			</button>
 			<button
 				type="button"
@@ -94,7 +90,7 @@
 					: 'bg-accent text-accent-ink enabled:hover:bg-accent/90'}"
 				onclick={() => void confirm()}
 			>
-				{busy ? '…' : confirmLabel}
+				{busy ? '…' : confirmText}
 			</button>
 		</div>
 	</div>

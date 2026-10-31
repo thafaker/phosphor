@@ -9,6 +9,7 @@
 	import Sidebar from '#lib/components/Sidebar.svelte';
 	import type { Notification, Status } from '#lib/api/types.ts';
 	import { session } from '#lib/auth/session.svelte.ts';
+	import { i18n } from '#lib/i18n/index.svelte.ts';
 	import { homeFeed, localFeed } from '#lib/stores/feed.svelte.ts';
 	import { followRequests } from '#lib/stores/followRequests.svelte.ts';
 	import { notificationsFeed } from '#lib/stores/notifications.svelte.ts';
@@ -22,6 +23,7 @@
 	const isAuthRoute = $derived(page.url.pathname === '/login' || page.url.pathname === '/callback');
 
 	onMount(() => {
+		i18n.init();
 		preferences.init();
 		pushStore.init();
 		void session.init();

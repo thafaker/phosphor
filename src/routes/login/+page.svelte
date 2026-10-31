@@ -2,6 +2,7 @@
 	import Icon from '#lib/components/Icon.svelte';
 	import { APP_NAME, DEFAULT_INSTANCE_URL } from '#lib/config.ts';
 	import { instance } from '#lib/instance.svelte.ts';
+	import { t } from '#lib/i18n/index.svelte.ts';
 	import { session } from '#lib/auth/session.svelte.ts';
 	import { instanceHost, normalizeInstanceUrl } from '#lib/utils/instance.ts';
 
@@ -13,7 +14,7 @@
 	function login(): void {
 		localError = null;
 		if (!instance.set(input)) {
-			localError = 'Bitte eine gültige Instanz-URL angeben, z. B. social.example.org.';
+			localError = t('login.invalidInstance');
 			return;
 		}
 		void session.beginLogin();
@@ -25,12 +26,12 @@
 		<div class="text-center">
 			<Icon name="sparkles" size={40} class="mx-auto text-accent" />
 			<h1 class="mt-3 text-2xl font-bold tracking-tight text-accent">{APP_NAME}</h1>
-			<p class="mt-1 text-sm text-ink-soft">Ein schlankes Web-Frontend für GoToSocial.</p>
+			<p class="mt-1 text-sm text-ink-soft">{t('login.subtitle')}</p>
 		</div>
 
 		<form class="mt-6" onsubmit={(event) => (event.preventDefault(), login())}>
 			<label for="instance" class="text-xs font-medium tracking-wide text-ink-soft uppercase">
-				Instanz
+				{t('login.instance')}
 			</label>
 			<input
 				id="instance"
@@ -44,7 +45,8 @@
 				class="mt-1 w-full rounded-md border border-line bg-inset px-3 py-2 text-sm text-ink-strong placeholder-ink-faint outline-none focus:border-accent/60"
 			/>
 			<p class="mt-1 text-xs leading-relaxed text-ink-faint">
-				Die Adresse deiner GoToSocial-Instanz. Ohne <code>https://</code> wird HTTPS angenommen.
+				{t('login.addressHintBefore')} <code>https://</code>
+				{t('login.addressHintAfter')}
 			</p>
 
 			<button
@@ -53,9 +55,9 @@
 				disabled={!host}
 			>
 				{#if host}
-					Mit {host} anmelden
+					{t('login.submitWith', { host })}
 				{:else}
-					Instanz angeben
+					{t('login.submitNoHost')}
 				{/if}
 			</button>
 		</form>
@@ -65,8 +67,7 @@
 		{/if}
 
 		<p class="mt-4 text-xs leading-relaxed text-ink-faint">
-			Du wirst zur Anmeldung deiner Instanz weitergeleitet und kehrst danach hierher zurück.
-			Phosphor speichert nur die Instanz-Adresse und dein Token in diesem Browser.
+			{t('login.redirectNote')}
 		</p>
 	</div>
 </div>

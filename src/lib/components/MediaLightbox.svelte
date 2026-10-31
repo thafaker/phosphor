@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { MediaAttachment } from '#lib/api/types.ts';
+	import { t } from '#lib/i18n/index.svelte.ts';
 	import Icon from './Icon.svelte';
 
 	interface Props {
@@ -85,7 +86,7 @@
 		class="fixed inset-0 z-50 flex flex-col overflow-hidden bg-scrim/95 p-3 text-ink backdrop-blur-sm sm:p-6"
 		role="dialog"
 		aria-modal="true"
-		aria-label="Medienansicht"
+		aria-label={t('media.viewer')}
 	>
 		<!-- Mouse-only backdrop; Escape and the visible close button are accessible. -->
 		<button
@@ -104,7 +105,7 @@
 				bind:this={closeButton}
 				type="button"
 				class="rounded-full p-2 text-ink-soft transition hover:bg-accent/10 hover:text-ink-strong"
-				aria-label="Medienansicht schließen"
+				aria-label={t('media.closeViewer')}
 				onclick={onClose}
 			>
 				<Icon name="close" size={22} />
@@ -117,7 +118,7 @@
 					type="button"
 					class="shrink-0 rounded-full border border-line bg-surface/90 p-2 text-ink-soft transition hover:bg-accent/10 hover:text-ink-strong disabled:opacity-30"
 					disabled={index === 0}
-					aria-label="Vorheriges Medium"
+					aria-label={t('media.previous')}
 					onclick={previous}
 				>
 					<Icon name="chevron-left" size={24} />
@@ -128,7 +129,7 @@
 				{#if current.type === 'image'}
 					<img
 						src={current.url}
-						alt={current.description ?? 'Bild'}
+						alt={current.description ?? t('media.imageFallback')}
 						class="max-h-[74dvh] max-w-full rounded-lg object-contain shadow-glow"
 					/>
 				{:else if current.type === 'video' || current.type === 'gifv'}
@@ -174,7 +175,7 @@
 					type="button"
 					class="shrink-0 rounded-full border border-line bg-surface/90 p-2 text-ink-soft transition hover:bg-accent/10 hover:text-ink-strong disabled:opacity-30"
 					disabled={index === attachments.length - 1}
-					aria-label="Nächstes Medium"
+					aria-label={t('media.next')}
 					onclick={next}
 				>
 					<Icon name="chevron-right" size={24} />
@@ -189,7 +190,7 @@
 				rel="noopener noreferrer"
 				class="inline-flex items-center gap-1.5 text-xs text-ink-faint transition hover:text-ink-strong"
 			>
-				Original öffnen
+				{t('media.openOriginal')}
 				<Icon name="link-out" size={13} />
 			</a>
 		</div>

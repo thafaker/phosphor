@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { tick } from 'svelte';
 	import type { MediaAttachment } from '#lib/api/types.ts';
+	import { t } from '#lib/i18n/index.svelte.ts';
 	import Icon from './Icon.svelte';
 	import MediaLightbox from './MediaLightbox.svelte';
 
@@ -43,8 +44,8 @@
 						type="button"
 						class="group relative block w-full cursor-zoom-in overflow-hidden rounded-lg bg-inset ring-1 ring-line focus-visible:ring-2 focus-visible:ring-accent"
 						aria-label={attachment.description
-							? `Bild öffnen: ${attachment.description}`
-							: `Bild ${index + 1} von ${attachments.length} öffnen`}
+							? t('media.openImage', { description: attachment.description })
+							: t('media.openImageIndex', { index: index + 1, total: attachments.length })}
 						onclick={(event) => openLightbox(index, event)}
 					>
 						<img
@@ -78,7 +79,7 @@
 						<button
 							type="button"
 							class="absolute top-2 right-2 z-10 rounded-full bg-scrim/80 p-1.5 text-ink transition hover:bg-accent/20"
-							aria-label="Video in Medienansicht öffnen"
+							aria-label={t('media.openVideo')}
 							onclick={(event) => openLightbox(index, event)}
 						>
 							<Icon name="expand" size={16} />
@@ -88,7 +89,7 @@
 					<div class="flex flex-col gap-2 rounded-lg bg-inset p-3 ring-1 ring-line">
 						<div class="flex items-center gap-2 text-xs text-ink-soft">
 							<Icon name="volume" size={16} />
-							Audio
+							{t('media.audio')}
 						</div>
 						<audio src={attachment.url} controls class="w-full"></audio>
 						{#if attachment.description}
@@ -116,7 +117,7 @@
 				onclick={() => (revealed = true)}
 			>
 				<Icon name="alert" size={18} />
-				Sensible Inhalte anzeigen
+				{t('media.showSensitive')}
 			</button>
 		{/if}
 	</div>

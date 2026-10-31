@@ -12,6 +12,7 @@ import {
 } from '#lib/config.ts';
 import { instance } from '#lib/instance.svelte.ts';
 import { normalizeInstanceUrl } from '#lib/utils/instance.ts';
+import { t } from '#lib/i18n/index.svelte.ts';
 
 const STORAGE_KEY = 'phosphor:session:v1';
 const APP_KEY = 'phosphor:oauth-app:v1';
@@ -134,7 +135,7 @@ class Session {
 	async beginLogin(): Promise<void> {
 		this.error = null;
 		if (!instance.url) {
-			this.error = 'Bitte gib die URL deiner Instanz an.';
+			this.error = t('auth.noInstance');
 			return;
 		}
 		try {
@@ -149,7 +150,7 @@ class Session {
 			sessionStorage.setItem(STATE_KEY, state);
 			window.location.href = authorizeUrl(app, state);
 		} catch (err) {
-			this.error = err instanceof Error ? err.message : 'Login fehlgeschlagen';
+			this.error = err instanceof Error ? err.message : t('auth.loginFailed');
 		}
 	}
 
@@ -160,11 +161,11 @@ class Session {
 		const expectedState = sessionStorage.getItem(STATE_KEY);
 		sessionStorage.removeItem(STATE_KEY);
 		if (expectedState && returnedState !== expectedState) {
-			throw new Error('Ungültiger OAuth-State — bitte erneut versuchen.');
+			throw new Error(t('auth.invalidState'));
 		}
 
 		const app = this.app ?? loadApp(instance.url) ?? loadPersisted()?.app ?? null;
-		if (!app) throw new Error('App-Registrierung fehlt — bitte erneut einloggen.');
+		if (!app) throw new Error(t('auth.missingApp'));
 
 		const tokenResponse = await exchangeCode(code, app);
 		const token = tokenResponse.access_token;

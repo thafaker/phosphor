@@ -11,6 +11,7 @@
 	} from '#lib/api/gotosocial.ts';
 	import type { Status } from '#lib/api/types.ts';
 	import { session } from '#lib/auth/session.svelte.ts';
+	import { plural, t } from '#lib/i18n/index.svelte.ts';
 	import { applyStatusRemoval, applyStatusUpdate } from '#lib/stores/statusSync.ts';
 	import { formatCount } from '#lib/utils/format.ts';
 	import { instanceHost } from '#lib/utils/instance.ts';
@@ -212,27 +213,27 @@
 			</a>
 			<Icon name={visibilityIcon} size={13} class="text-ink-faint" />
 			{#if status.edited_at}
-				<span class="text-ink-faint">· bearbeitet</span>
+				<span class="text-ink-faint">· {t('common.edited')}</span>
 			{/if}
 			{#if isOwn}
 				<span class="ml-auto flex items-center gap-1">
 					<button
 						type="button"
-						title="Beitrag bearbeiten"
+						title={t('status.editTitle')}
 						class="flex items-center gap-1 rounded-md px-1.5 py-0.5 text-xs text-ink-faint hover:bg-accent/10 hover:text-ink-strong"
 						onclick={() => (editing = true)}
 					>
 						<Icon name="pencil" size={14} />
-						Bearbeiten
+						{t('status.edit')}
 					</button>
 					<button
 						type="button"
-						title="Beitrag löschen"
+						title={t('status.deleteTitle')}
 						class="flex items-center gap-1 rounded-md px-1.5 py-0.5 text-xs text-ink-faint hover:bg-danger/10 hover:text-danger"
 						onclick={() => (confirmingDelete = true)}
 					>
 						<Icon name="trash" size={14} />
-						Löschen
+						{t('status.delete')}
 					</button>
 				</span>
 			{/if}
@@ -241,7 +242,7 @@
 		{#if status.spoiler_text}
 			<div class="mt-1.5">
 				<p class="text-sm text-warn">
-					<span class="font-semibold">CW:</span>
+					<span class="font-semibold">{t('status.cw')}</span>
 					{status.spoiler_text}
 				</p>
 				<button
@@ -249,7 +250,7 @@
 					class="mt-1 rounded-md border border-accent/40 px-2 py-1 text-xs text-ink hover:bg-accent/10"
 					onclick={() => (showContent = !showContent)}
 				>
-					{showContent ? 'Inhalt verbergen' : 'Inhalt anzeigen'}
+					{showContent ? t('status.hideContent') : t('status.showContent')}
 				</button>
 			</div>
 		{/if}
@@ -283,8 +284,10 @@
 					{/each}
 				</ul>
 				<p class="mt-1 text-xs text-ink-faint">
-					{status.poll.votes_count} Stimmen
-					{status.poll.expired ? '· beendet' : ''}
+					{plural(status.poll.votes_count ?? 0, 'status.vote.one', 'status.vote.other', {
+						count: status.poll.votes_count ?? 0
+					})}
+					{status.poll.expired ? `· ${t('status.pollEnded')}` : ''}
 				</p>
 			{/if}
 
@@ -324,7 +327,7 @@
 				<button
 					type="button"
 					class="flex items-center gap-1.5 text-sm hover:text-ink-strong"
-					title="Antworten"
+					title={t('status.reply')}
 					onclick={onReply}
 				>
 					<Icon name="reply" size={17} />
@@ -334,7 +337,7 @@
 				<a
 					href={`/status/${status.id}`}
 					class="flex items-center gap-1.5 text-sm hover:text-ink-strong"
-					title="Antworten"
+					title={t('status.reply')}
 				>
 					<Icon name="reply" size={17} />
 					<span class="text-xs">{formatCount(status.replies_count)}</span>
@@ -346,7 +349,7 @@
 				class="flex items-center gap-1.5 text-sm hover:text-accent"
 				class:text-accent={status.reblogged}
 				onclick={toggleReblog}
-				title="Boosten"
+				title={t('status.boost')}
 			>
 				<Icon name="boost" size={17} />
 				<span class="text-xs">{formatCount(status.reblogs_count)}</span>
@@ -357,7 +360,7 @@
 				class="flex items-center gap-1.5 text-sm hover:text-warn"
 				class:text-warn={status.favourited}
 				onclick={toggleFavourite}
-				title="Favorisieren"
+				title={t('status.favourite')}
 			>
 				<Icon name="star" size={17} filled={status.favourited} />
 				<span class="text-xs">{formatCount(status.favourites_count)}</span>
@@ -369,7 +372,7 @@
 					class="flex items-center gap-1.5 text-sm hover:text-accent"
 					class:text-accent={status.bookmarked}
 					onclick={toggleBookmark}
-					title="Merken"
+					title={t('status.bookmark')}
 				>
 					<Icon name="bookmark" size={17} filled={status.bookmarked} />
 				</button>
@@ -377,16 +380,16 @@
 				{#if originalUrl}
 					<CopyLinkButton
 						url={originalUrl}
-						label="Link"
-						title={`Link zum Originalbeitrag kopieren (${originalHost})`}
+						label={t('status.copyLabel')}
+						title={t('status.copyLinkTitle', { host: originalHost })}
 						class="px-1 py-0.5 text-ink-soft hover:text-ink-strong"
 					/>
 					<a
 						href={originalUrl}
 						target="_blank"
 						rel="noopener noreferrer"
-						title={`Originalbeitrag auf ${originalHost} öffnen`}
-						aria-label={`Originalbeitrag auf ${originalHost} öffnen`}
+						title={t('status.openOriginal', { host: originalHost })}
+						aria-label={t('status.openOriginal', { host: originalHost })}
 						class="rounded-md px-1 py-0.5 text-ink-soft transition hover:bg-accent/10 hover:text-ink-strong"
 					>
 						<Icon name="link-out" size={17} />
@@ -402,9 +405,9 @@
 
 	{#if confirmingDelete}
 		<ConfirmDialog
-			title="Beitrag löschen?"
-			body="Der Beitrag wird dauerhaft vom Server entfernt. Das kann nicht rückgängig gemacht werden."
-			confirmLabel="Löschen"
+			title={t('status.deleteQuestion')}
+			body={t('status.deleteBody')}
+			confirmLabel={t('common.delete')}
 			danger
 			onConfirm={confirmDelete}
 			onClose={() => (confirmingDelete = false)}

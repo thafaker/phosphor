@@ -3,6 +3,7 @@
 	import { editStatus, getStatusSource } from '#lib/api/gotosocial.ts';
 	import type { Status } from '#lib/api/types.ts';
 	import { session } from '#lib/auth/session.svelte.ts';
+	import { t } from '#lib/i18n/index.svelte.ts';
 	import { preferences } from '#lib/stores/preferences.svelte.ts';
 	import { emojify } from '#lib/utils/text.ts';
 	import Avatar from './Avatar.svelte';
@@ -86,7 +87,7 @@
 				originalMarkdown = markdown;
 			} catch (err) {
 				if (!cancelled) {
-					error = err instanceof Error ? err.message : 'Beitrag konnte nicht geladen werden.';
+					error = err instanceof Error ? err.message : t('editor.loadFailed');
 				}
 			} finally {
 				if (!cancelled) {
@@ -125,7 +126,7 @@
 			onSaved(updated);
 			dialogEl?.close();
 		} catch (err) {
-			error = err instanceof Error ? err.message : 'Beitrag konnte nicht bearbeitet werden.';
+			error = err instanceof Error ? err.message : t('editor.saveFailed');
 		} finally {
 			submitting = false;
 		}
@@ -171,11 +172,11 @@
 			<Avatar src={status.account.avatar_static} alt={status.account.username} size={36} />
 			<div class="min-w-0 flex-1">
 				<p class="truncate text-sm font-semibold text-ink-strong">{@html nameHtml}</p>
-				<p id="edit-status-title" class="text-xs text-ink-faint">Beitrag bearbeiten</p>
+				<p id="edit-status-title" class="text-xs text-ink-faint">{t('editor.title')}</p>
 			</div>
 			<button
 				type="button"
-				aria-label="Schließen"
+				aria-label={t('common.close')}
 				class="rounded-md p-1 text-ink-soft hover:bg-accent/10 hover:text-ink-strong"
 				onclick={() => dialogEl?.close()}
 			>
@@ -192,7 +193,7 @@
 				<input
 					type="text"
 					bind:value={spoilerText}
-					placeholder="Inhaltswarnung (CW)"
+					placeholder={t('composer.cwPlaceholder')}
 					class="w-full rounded-md border border-warn/30 bg-inset px-3 py-1.5 text-sm text-warn placeholder-ink-faint outline-none focus:border-warn/60"
 				/>
 			{/if}
@@ -203,12 +204,13 @@
 				rows={5}
 				onkeydown={onKeydown}
 				class="w-full resize-y rounded-md border border-line bg-inset px-3 py-2 text-post leading-relaxed text-ink-strong placeholder-ink-faint outline-none focus:border-accent/60"
-				placeholder="Was gibt es Neues?"></textarea>
+				placeholder={t('composer.placeholder')}></textarea>
 
 			{#if showEscapingHint}
 				<p class="text-xs text-ink-faint">
-					Markdown ist aktiv: <code class="rounded bg-inset px-1">\</code> maskiert Sonderzeichen.
-					Für einen sichtbaren Backslash <code class="rounded bg-inset px-1">\\</code> schreiben.
+					{t('composer.escapeBefore')} <code class="rounded bg-inset px-1">\</code>
+					{t('composer.escapeMiddle')} <code class="rounded bg-inset px-1">\\</code>
+					{t('composer.escapeAfter')}
 				</p>
 			{/if}
 
@@ -219,7 +221,7 @@
 						? 'text-warn'
 						: 'text-ink-soft'}"
 					onclick={() => (cwEnabled = !cwEnabled)}
-					title="Inhaltswarnung"
+					title={t('composer.cwTitle')}
 				>
 					<Icon name="alert" size={15} />
 					CW
@@ -231,7 +233,7 @@
 						? 'text-accent'
 						: 'text-ink-soft'}"
 					onclick={() => (markdown = !markdown)}
-					title="Markdown-Formatierung {markdown ? 'ausschalten' : 'einschalten'}"
+					title={t(markdown ? 'composer.markdownDisable' : 'composer.markdownEnable')}
 					aria-pressed={markdown}
 				>
 					<span class="font-mono text-[11px] font-bold">MD</span>
@@ -246,16 +248,16 @@
 							? 'text-warn'
 							: 'text-ink-soft'}"
 						onclick={() => (sensitive = !sensitive)}
-						title="Medien als sensibel markieren"
+						title={t('composer.sensitiveTitle')}
 					>
 						<Icon name="image" size={15} />
-						sensibel
+						{t('common.sensitive')}
 					</button>
 				{/if}
 
 				<span
 					class="ml-auto text-xs {remaining < 0 ? 'text-danger' : 'text-ink-faint'}"
-					aria-label="Verbleibende Zeichen"
+					aria-label={t('editor.remaining')}
 				>
 					{remaining}
 				</span>
@@ -271,7 +273,7 @@
 					class="rounded-full px-3.5 py-1.5 text-sm text-ink-soft hover:bg-accent/10 hover:text-ink-strong"
 					onclick={() => dialogEl?.close()}
 				>
-					Abbrechen
+					{t('common.cancel')}
 				</button>
 				<button
 					type="button"
@@ -280,7 +282,7 @@
 					onclick={() => void submit()}
 				>
 					<Icon name="check" size={15} />
-					{submitting ? 'Speichert…' : 'Speichern'}
+					{submitting ? t('editor.saving') : t('editor.save')}
 				</button>
 			</div>
 		{/if}

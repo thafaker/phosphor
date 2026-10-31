@@ -1,5 +1,6 @@
 import { getCustomEmojis } from '#lib/api/gotosocial.ts';
 import type { CustomEmoji } from '#lib/api/types.ts';
+import { t } from '#lib/i18n/index.svelte.ts';
 
 /**
  * Lazily loaded, instance-wide custom emoji. Shared by the composer picker so
@@ -21,7 +22,7 @@ class EmojiStore {
 			this.items = all.filter((emoji) => emoji.visible_in_picker !== false);
 			this.loaded = true;
 		} catch (err) {
-			this.error = err instanceof Error ? err.message : 'Emojis konnten nicht geladen werden.';
+			this.error = err instanceof Error ? err.message : t('emoji.loadFailed');
 		} finally {
 			this.loading = false;
 		}

@@ -4,17 +4,26 @@
 	import NewItemsPill from '#lib/components/NewItemsPill.svelte';
 	import StatusCard from '#lib/components/StatusCard.svelte';
 	import type { Notification, NotificationType } from '#lib/api/types.ts';
+	import { t } from '#lib/i18n/index.svelte.ts';
 	import { notificationsFeed } from '#lib/stores/notifications.svelte.ts';
 	import { emojify } from '#lib/utils/text.ts';
 	import { relativeTime } from '#lib/utils/time.ts';
 
 	type Filter = 'all' | 'mentions' | 'favourites' | 'boosts' | 'follows' | 'other';
 
-	const buckets: { value: Filter; label: string; types: NotificationType[] }[] = [
-		{ value: 'mentions', label: 'Erwähnungen', types: ['mention'] },
-		{ value: 'favourites', label: 'Favoriten', types: ['favourite'] },
-		{ value: 'boosts', label: 'Boosts', types: ['reblog'] },
-		{ value: 'follows', label: 'Folgt', types: ['follow', 'follow_request'] }
+	const buckets: { value: Filter; label: () => string; types: NotificationType[] }[] = [
+		{ value: 'mentions', label: () => t('notifications.filter.mentions'), types: ['mention'] },
+		{
+			value: 'favourites',
+			label: () => t('notifications.filter.favourites'),
+			types: ['favourite']
+		},
+		{ value: 'boosts', label: () => t('notifications.filter.boosts'), types: ['reblog'] },
+		{
+			value: 'follows',
+			label: () => t('notifications.filter.follows'),
+			types: ['follow', 'follow_request']
+		}
 	];
 
 	const known = new Set(buckets.flatMap((bucket) => bucket.types));
@@ -25,27 +34,32 @@
 	 * consistent across tabs. "Sonstiges" is whatever does not fit the other
 	 * buckets, so new notification types cannot silently disappear.
 	 */
-	const filters: { value: Filter; label: string; match: (item: Notification) => boolean }[] = [
-		{ value: 'all', label: 'Alle', match: () => true },
-		...buckets.map((bucket) => ({
-			...bucket,
-			match: (item: Notification) => bucket.types.includes(item.type)
-		})),
-		{ value: 'other', label: 'Sonstiges', match: (item: Notification) => !known.has(item.type) }
-	];
+	const filters: { value: Filter; label: () => string; match: (item: Notification) => boolean }[] =
+		[
+			{ value: 'all', label: () => t('notifications.filter.all'), match: () => true },
+			...buckets.map((bucket) => ({
+				...bucket,
+				match: (item: Notification) => bucket.types.includes(item.type)
+			})),
+			{
+				value: 'other',
+				label: () => t('notifications.filter.other'),
+				match: (item: Notification) => !known.has(item.type)
+			}
+		];
 
-	const meta: Record<string, { icon: string; label: string }> = {
-		mention: { icon: 'at', label: 'hat dich erwähnt' },
-		reblog: { icon: 'boost', label: 'hat deinen Beitrag geboostet' },
-		favourite: { icon: 'star', label: 'hat deinen Beitrag favorisiert' },
-		follow: { icon: 'user', label: 'folgt dir jetzt' },
-		follow_request: { icon: 'user', label: 'möchte dir folgen' },
-		poll: { icon: 'info', label: 'Eine Umfrage ist beendet' },
-		update: { icon: 'sparkles', label: 'hat einen Beitrag bearbeitet' }
+	const meta: Record<string, { icon: string; label: () => string }> = {
+		mention: { icon: 'at', label: () => t('notifications.meta.mention') },
+		reblog: { icon: 'boost', label: () => t('notifications.meta.reblog') },
+		favourite: { icon: 'star', label: () => t('notifications.meta.favourite') },
+		follow: { icon: 'user', label: () => t('notifications.meta.follow') },
+		follow_request: { icon: 'user', label: () => t('notifications.meta.followRequest') },
+		poll: { icon: 'info', label: () => t('notifications.meta.poll') },
+		update: { icon: 'sparkles', label: () => t('notifications.meta.update') }
 	};
 
 	function describe(type: NotificationType) {
-		return meta[type] ?? { icon: 'bell', label: 'Neue Aktivität' };
+		return meta[type] ?? { icon: 'bell', label: () => t('notifications.meta.default') };
 	}
 
 	let filter = $state<Filter>('all');
@@ -114,7 +128,7 @@
 	<div class="flex items-center gap-3 px-4 py-3">
 		<h1 class="flex items-center gap-2 text-lg font-semibold tracking-tight text-ink-strong">
 			<Icon name="bell" size={18} class="text-accent" />
-			Meldungen
+			{t('notifications.title')}
 		</h1>
 		{#if unreadTotal > 0}
 			<button
@@ -123,7 +137,7 @@
 				onclick={() => notificationsFeed.markAllRead()}
 			>
 				<Icon name="check" size={13} />
-				Alle gelesen
+				{t('notifications.markAllRead')}
 			</button>
 		{/if}
 	</div>
@@ -131,7 +145,7 @@
 	<div
 		class="flex gap-2 overflow-x-auto px-4 pb-3 text-sm"
 		role="tablist"
-		aria-label="Meldungen filtern"
+		aria-label={t('notifications.filterLabel')}
 	>
 		{#each filters as entry (entry.value)}
 			{@const unread = countFor(entry)}
@@ -145,7 +159,7 @@
 					: 'border-line text-ink-soft hover:bg-accent/5 hover:text-ink-strong'}"
 				onclick={() => (filter = entry.value)}
 			>
-				{entry.label}
+				{entry.label()}
 				{#if unread > 0}
 					<span
 						class="rounded-full bg-accent px-1.5 text-[calc(10px*var(--text-scale))] leading-4 font-bold text-accent-ink"
@@ -162,8 +176,8 @@
 
 <NewItemsPill
 	count={notificationsFeed.pending.length}
-	singular="neue Meldung"
-	plural="neue Meldungen"
+	singular={t('notifications.newOne')}
+	plural={t('notifications.newMany')}
 	onclick={showPending}
 	offsetClass="top-24"
 />
@@ -186,7 +200,9 @@
 			class="mx-auto mb-3 text-ink-soft"
 		/>
 		<p>
-			{filter === 'all' ? 'Noch keine Meldungen.' : `Keine Meldungen in „${current.label}“.`}
+			{filter === 'all'
+				? t('notifications.empty')
+				: t('notifications.emptyFiltered', { filter: current.label() })}
 		</p>
 	</div>
 {:else}
@@ -198,7 +214,10 @@
 			<li class="border-b border-line {unread ? 'bg-accent/5' : ''}">
 				<div class="flex items-center gap-3 px-4 pt-3">
 					{#if unread}
-						<span class="h-2 w-2 shrink-0 rounded-full bg-accent" aria-label="Ungelesen"></span>
+						<span
+							class="h-2 w-2 shrink-0 rounded-full bg-accent"
+							aria-label={t('notifications.unread')}
+						></span>
 					{:else}
 						<span class="h-2 w-2 shrink-0"></span>
 					{/if}
@@ -210,7 +229,7 @@
 						>
 							{@html emojify(name, notification.account.emojis)}
 						</a>
-						{info.label}
+						{info.label()}
 					</div>
 					<a href={`/accounts/${notification.account.id}`} title={`@${notification.account.acct}`}>
 						<Avatar src={notification.account.avatar_static} alt={name} size={32} />
@@ -222,8 +241,8 @@
 						<button
 							type="button"
 							class="rounded-md p-1 text-ink-faint transition hover:bg-accent/10 hover:text-accent"
-							title="Als gelesen markieren"
-							aria-label="Als gelesen markieren"
+							title={t('notifications.markRead')}
+							aria-label={t('notifications.markRead')}
 							onclick={() => markRead(notification)}
 						>
 							<Icon name="check" size={15} />

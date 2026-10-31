@@ -106,7 +106,10 @@ function check(name, ok, detail = '') {
 		...(process.env.CHROME ? { executablePath: process.env.CHROME } : {}),
 		args: ['--no-sandbox']
 	});
-	const context = await browser.newContext({ viewport: { width: 900, height: 900 } });
+	const context = await browser.newContext({
+		locale: 'de-DE',
+		viewport: { width: 900, height: 900 }
+	});
 
 	await context.route('**/api/**', (route) => {
 		const path = new URL(route.request().url()).pathname;

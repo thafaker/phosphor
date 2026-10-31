@@ -1,5 +1,6 @@
 import { homeTimeline, publicTimeline } from '#lib/api/gotosocial.ts';
 import type { Status } from '#lib/api/types.ts';
+import { t } from '#lib/i18n/index.svelte.ts';
 
 const PAGE_SIZE = 20;
 
@@ -55,7 +56,7 @@ export class TimelineFeed {
 			this.pending = [];
 			this.loaded = true;
 		} catch (err) {
-			this.error = err instanceof Error ? err.message : 'Timeline konnte nicht geladen werden.';
+			this.error = err instanceof Error ? err.message : t('timeline.loadFailed');
 		} finally {
 			this.loading = false;
 		}
@@ -71,8 +72,7 @@ export class TimelineFeed {
 			const older = await this.loader({ limit: PAGE_SIZE, maxId: oldest });
 			this.items = dedupe([...this.items, ...older]);
 		} catch (err) {
-			this.error =
-				err instanceof Error ? err.message : 'Ältere Beiträge konnten nicht geladen werden.';
+			this.error = err instanceof Error ? err.message : t('timeline.loadMoreFailed');
 		} finally {
 			this.loading = false;
 		}

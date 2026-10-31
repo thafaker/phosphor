@@ -1,3 +1,5 @@
+import { currentLocale } from '#lib/i18n/index.svelte.ts';
+
 const relativeFormatters = new Map<string, Intl.RelativeTimeFormat>();
 
 function relativeFormatter(locale: string): Intl.RelativeTimeFormat {
@@ -18,7 +20,7 @@ const UNITS: [Intl.RelativeTimeFormatUnit, number][] = [
 	['minute', 1000 * 60]
 ];
 
-export function relativeTime(iso: string, locale = 'de'): string {
+export function relativeTime(iso: string, locale = currentLocale()): string {
 	const diff = new Date(iso).getTime() - Date.now();
 	for (const [unit, ms] of UNITS) {
 		if (Math.abs(diff) >= ms) {
@@ -28,13 +30,13 @@ export function relativeTime(iso: string, locale = 'de'): string {
 	return relativeFormatter(locale).format(Math.round(diff / 1000), 'second');
 }
 
-export function absoluteTime(iso: string, locale = 'de'): string {
+export function absoluteTime(iso: string, locale = currentLocale()): string {
 	return new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' }).format(
 		new Date(iso)
 	);
 }
 
 /** Date without the time, e.g. for "joined on …" on a profile. */
-export function absoluteDate(iso: string, locale = 'de'): string {
+export function absoluteDate(iso: string, locale = currentLocale()): string {
 	return new Intl.DateTimeFormat(locale, { dateStyle: 'long' }).format(new Date(iso));
 }

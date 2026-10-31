@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import Avatar from '#lib/components/Avatar.svelte';
 	import Icon from '#lib/components/Icon.svelte';
+	import { t } from '#lib/i18n/index.svelte.ts';
 	import { followRequests } from '#lib/stores/followRequests.svelte.ts';
 	import { refreshEvent } from '#lib/stores/refresh.svelte.ts';
 	import { absoluteDate } from '#lib/utils/time.ts';
@@ -19,7 +20,7 @@
 <header class="sticky top-0 z-20 border-b border-line bg-canvas/85 px-4 py-3 backdrop-blur">
 	<h1 class="flex items-center gap-2 text-lg font-semibold tracking-tight text-ink-strong">
 		<Icon name="user-plus" size={18} class="text-accent" />
-		Folgeanfragen
+		{t('requests.title')}
 	</h1>
 </header>
 
@@ -34,7 +35,7 @@
 			class="rounded-md border border-danger/40 px-2 py-1 text-xs hover:bg-danger/10"
 			onclick={() => followRequests.load(true)}
 		>
-			Erneut versuchen
+			{t('common.retry')}
 		</button>
 	</div>
 {/if}
@@ -46,8 +47,8 @@
 {:else if !followRequests.items.length && followRequests.loaded}
 	<div class="px-6 py-16 text-center text-ink-faint">
 		<Icon name="user-plus" size={28} class="mx-auto mb-3 text-ink-soft" />
-		<p>Keine offenen Anfragen.</p>
-		<p class="mt-1 text-sm">Anfragen erscheinen hier, solange dein Profil privat ist.</p>
+		<p>{t('requests.empty')}</p>
+		<p class="mt-1 text-sm">{t('requests.emptyHint')}</p>
 	</div>
 {:else}
 	<ul>
@@ -69,7 +70,7 @@
 						</a>
 						<span class="ml-1 text-sm text-ink-faint">@{account.acct}</span>
 						<span class="ml-1 text-xs text-ink-faint">
-							· aufgenommen am {absoluteDate(account.created_at)}
+							· {t('requests.joined', { date: absoluteDate(account.created_at) })}
 						</span>
 
 						{#if account.note}
@@ -85,7 +86,7 @@
 								class="rounded-full bg-accent px-3.5 py-1.5 text-sm font-semibold text-accent-ink transition hover:bg-accent/90 disabled:cursor-not-allowed disabled:opacity-50"
 								onclick={() => void followRequests.accept(account.id)}
 							>
-								Annehmen
+								{t('common.accept')}
 							</button>
 							<button
 								type="button"
@@ -93,7 +94,7 @@
 								class="rounded-full border border-line px-3.5 py-1.5 text-sm text-ink transition hover:bg-danger/10 hover:text-danger disabled:cursor-not-allowed disabled:opacity-50"
 								onclick={() => void followRequests.reject(account.id)}
 							>
-								Ablehnen
+								{t('common.reject')}
 							</button>
 						</div>
 					</div>
