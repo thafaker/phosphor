@@ -47,10 +47,11 @@ vorbelegen (siehe `.env.example`).
 - [x] Barrierefreie Schriftgröße (100 % – 200 %), wirkt auf die ganze App
 - [x] Reduzierte Bewegung (Systemeinstellung oder erzwungen)
 - [x] Installierbar als App (PWA-Manifest + Icons) für den Home-Bildschirm
+- [x] Offline-Cache: App-Shell und Bundles per Service Worker, zuletzt geladene
+      Timelines und Meldungen lokal; Offline-Hinweis in der Oberfläche
 
 ### Als Nächstes
 
-- [ ] Offline-Cache (der Service Worker existiert bereits für Push, cached aber bewusst nichts)
 - [ ] Barrierefreiheit ausbauen und mit Screenreadern testen
 - [ ] Link-Preview-Cards — blockiert: GtS 0.22 liefert `card` nie (kein OpenGraph-Fetch);
       die Anzeige in `StatusBody` ist fertig, bräuchte aber Server-/Proxy-Unterstützung

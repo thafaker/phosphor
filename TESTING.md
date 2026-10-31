@@ -43,7 +43,7 @@ Hinweise:
 ### Unit-Tests (ohne Konto, ohne Netz)
 
 ```bash
-pnpm test           # Vitest, 99 Tests
+pnpm test           # Vitest, 103 Tests
 pnpm check          # svelte-check
 pnpm lint           # Prettier + ESLint
 ```
@@ -86,6 +86,7 @@ Fake-Session an. Sie brauchen weder ein Konto noch Netzwerkzugriff. Abgedeckt si
 | `media-lightbox.mjs`    | Bild-Lightbox, Navigation, Fokus, Audio-Player, Custom-Emoji im Text      |
 | `image-compression.mjs` | Großes Foto wird vor dem Upload auf 1024 px/JPEG verkleinert              |
 | `language.mjs`          | Sprachwahl, Persistenz, `lang`-Attribut und sprachabhängige Zahlenformate |
+| `offline.mjs`           | Offline-Start aus Service-Worker-Cache, tiefer Link, Rückkehr ins Netz    |
 
 ## 4. Was nur manuell geht
 
@@ -95,6 +96,8 @@ Diese Bereiche decken die automatisierten Tests nicht ab:
 - **Echte Timelines, Streaming und Lückenfüllung** beim Zurückkehren in die App
 - **Medien-Upload** (Bild/Video/Audio, ALT-Text, Größenlimits)
 - **Web Push** (Berechtigung, VAPID, Benachrichtigung bei neuem Beitrag)
+- **Service-Worker-Updates** über echte Deploys hinweg (der Offline-Test prüft einen
+  einzelnen Build)
 - **Suche, Hashtag-Seiten, Folgen/Entfolgen, Blockieren/Stummschalten** gegen echte Daten
 - **Barrierefreiheit** mit Screenreader und Tastatur
 

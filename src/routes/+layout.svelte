@@ -9,14 +9,16 @@
 	import Sidebar from '#lib/components/Sidebar.svelte';
 	import type { Notification, Status } from '#lib/api/types.ts';
 	import { session } from '#lib/auth/session.svelte.ts';
-	import { i18n } from '#lib/i18n/index.svelte.ts';
+	import { i18n, t } from '#lib/i18n/index.svelte.ts';
 	import { homeFeed, localFeed } from '#lib/stores/feed.svelte.ts';
 	import { followRequests } from '#lib/stores/followRequests.svelte.ts';
 	import { notificationsFeed } from '#lib/stores/notifications.svelte.ts';
+	import { network } from '#lib/stores/network.svelte.ts';
 	import { preferences } from '#lib/stores/preferences.svelte.ts';
 	import { applyStatusRemoval, applyStatusUpdate, refreshViews } from '#lib/stores/statusSync.ts';
 	import { pushStore } from '#lib/push/push.svelte.ts';
 	import { streamer } from '#lib/stores/streamer.svelte.ts';
+	import { registerServiceWorker } from '#lib/utils/serviceWorker.ts';
 
 	let { children }: LayoutProps = $props();
 
@@ -26,8 +28,11 @@
 		i18n.init();
 		preferences.init();
 		pushStore.init();
+		registerServiceWorker();
 		void session.init();
 	});
+
+	onMount(() => network.init());
 
 	/**
 	 * When a mobile PWA is backgrounded the browser freezes the page: timers
@@ -194,6 +199,15 @@
 	<div class="mx-auto flex min-h-dvh w-full max-w-6xl">
 		<Sidebar />
 		<main class="min-h-dvh w-full max-w-2xl min-w-0 flex-1 border-line pb-16 md:border-x md:pb-0">
+			{#if !network.online}
+				<div
+					class="sticky top-0 z-20 flex items-center gap-2 border-b border-line bg-surface-2/95 px-4 py-2 text-xs text-ink-soft backdrop-blur"
+					role="status"
+				>
+					<Icon name="alert" size={14} class="shrink-0 text-accent" />
+					<span>{t('offline.banner')}</span>
+				</div>
+			{/if}
 			{@render children()}
 		</main>
 	</div>

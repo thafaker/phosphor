@@ -1,9 +1,11 @@
 <script lang="ts">
 	import type { Status } from '#lib/api/types.ts';
 	import { t } from '#lib/i18n/index.svelte.ts';
+	import { network } from '#lib/stores/network.svelte.ts';
 	import type { TimelineFeed } from '#lib/stores/feed.svelte.ts';
 	import Icon from './Icon.svelte';
 	import NewItemsPill from './NewItemsPill.svelte';
+	import OfflineNotice from './OfflineNotice.svelte';
 	import ReplyBox from './ReplyBox.svelte';
 	import StatusCard from './StatusCard.svelte';
 
@@ -97,6 +99,10 @@
 	plural={t('timeline.newPosts')}
 	onclick={showPending}
 />
+
+{#if feed.stale && network.online}
+	<OfflineNotice onRetry={() => feed.load(true)} />
+{/if}
 
 {#if feed.error}
 	<div

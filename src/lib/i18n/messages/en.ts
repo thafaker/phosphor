@@ -232,6 +232,8 @@ export const en: Record<MessageKey, string> = {
 	'account.empty.media': 'No media posts.',
 	'account.empty.posts': 'No posts yet.',
 
+	'offline.banner': 'Offline — showing content loaded earlier.',
+	'offline.stale': 'Showing saved content — refresh failed.',
 	'timeline.empty': 'Nothing here yet.',
 	'timeline.emptyHint': 'Follow a few people — GoToSocial only shows you new posts, not old ones.',
 	'timeline.newPost': 'new post',

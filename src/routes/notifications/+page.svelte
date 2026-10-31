@@ -2,9 +2,11 @@
 	import Avatar from '#lib/components/Avatar.svelte';
 	import Icon from '#lib/components/Icon.svelte';
 	import NewItemsPill from '#lib/components/NewItemsPill.svelte';
+	import OfflineNotice from '#lib/components/OfflineNotice.svelte';
 	import StatusCard from '#lib/components/StatusCard.svelte';
 	import type { Notification, NotificationType } from '#lib/api/types.ts';
 	import { t } from '#lib/i18n/index.svelte.ts';
+	import { network } from '#lib/stores/network.svelte.ts';
 	import { notificationsFeed } from '#lib/stores/notifications.svelte.ts';
 	import { emojify } from '#lib/utils/text.ts';
 	import { relativeTime } from '#lib/utils/time.ts';
@@ -181,6 +183,10 @@
 	onclick={showPending}
 	offsetClass="top-24"
 />
+
+{#if notificationsFeed.stale && network.online}
+	<OfflineNotice onRetry={() => notificationsFeed.load(true)} />
+{/if}
 
 {#if notificationsFeed.error}
 	<div class="m-4 rounded-lg border border-danger/30 bg-danger/10 p-3 text-sm text-danger">

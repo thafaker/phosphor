@@ -12,6 +12,7 @@ import {
 } from '#lib/config.ts';
 import { instance } from '#lib/instance.svelte.ts';
 import { normalizeInstanceUrl } from '#lib/utils/instance.ts';
+import { clearCachedLists } from '#lib/utils/offline.ts';
 import { t } from '#lib/i18n/index.svelte.ts';
 
 const STORAGE_KEY = 'phosphor:session:v1';
@@ -23,6 +24,19 @@ interface PersistedSession {
 	token: string;
 	/** Instance the token belongs to. Missing in sessions from before multi-instance. */
 	instance?: string;
+	/** Last verified profile and limits, used to boot offline. */
+	account?: Account;
+	limits?: InstanceLimits;
+}
+
+/**
+ * A fetch that fails because the network is gone throws a `TypeError`, not an
+ * `ApiError`. That distinction matters at startup: an offline launch keeps the
+ * persisted session, a rejected token clears it.
+ */
+function isNetworkFailure(error: unknown): boolean {
+	if (typeof navigator !== 'undefined' && !navigator.onLine) return true;
+	return error instanceof TypeError;
 }
 
 type AppCache = Record<string, RegisteredApp>;
@@ -124,8 +138,23 @@ class Session {
 		try {
 			this.account = await verifyCredentials();
 			this.limits = await getInstanceLimits();
-		} catch {
-			this.clear();
+			this.persist();
+		} catch (err) {
+			// The account request succeeded but the limits request failed: keep the
+			// session and fall back to the last known limits.
+			if (this.account) {
+				if (persisted.limits) this.limits = persisted.limits;
+				this.persist();
+			} else if (isNetworkFailure(err) && persisted.account) {
+				// Offline start: keep the last verified profile so the app shell and
+				// cached timelines stay usable. Anything else (e.g. a revoked token)
+				// still logs out.
+				this.account = persisted.account;
+				if (persisted.limits) this.limits = persisted.limits;
+				this.persist();
+			} else {
+				this.clear();
+			}
 		} finally {
 			this.ready = true;
 		}
@@ -175,11 +204,7 @@ class Session {
 		setTokenGetter(() => this.token);
 		this.account = await verifyCredentials();
 		this.limits = await getInstanceLimits();
-
-		localStorage.setItem(
-			STORAGE_KEY,
-			JSON.stringify({ app, token, instance: instance.url } satisfies PersistedSession)
-		);
+		this.persist();
 	}
 
 	logout(): void {
@@ -187,11 +212,31 @@ class Session {
 		void goto('/login');
 	}
 
+	/** Store the session plus the last known profile for offline startup. */
+	private persist(): void {
+		if (!this.app || !this.token) return;
+		try {
+			localStorage.setItem(
+				STORAGE_KEY,
+				JSON.stringify({
+					app: this.app,
+					token: this.token,
+					instance: instance.url,
+					account: this.account ?? undefined,
+					limits: this.limits
+				} satisfies PersistedSession)
+			);
+		} catch {
+			// ignore (e.g. storage disabled)
+		}
+	}
+
 	private clear(): void {
 		this.token = null;
 		this.account = null;
 		this.app = null;
 		setTokenGetter(() => null);
+		clearCachedLists();
 		try {
 			localStorage.removeItem(STORAGE_KEY);
 			sessionStorage.removeItem(STATE_KEY);

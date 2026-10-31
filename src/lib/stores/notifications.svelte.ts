@@ -1,6 +1,9 @@
 import { getNotifications, type TimelineParams } from '#lib/api/gotosocial.ts';
 import type { Notification, Status } from '#lib/api/types.ts';
+import { session } from '#lib/auth/session.svelte.ts';
 import { t } from '#lib/i18n/index.svelte.ts';
+import { instance } from '#lib/instance.svelte.ts';
+import { offlineKey, readCachedList, writeCachedList } from '#lib/utils/offline.ts';
 
 const PAGE_SIZE = 20;
 
@@ -63,6 +66,8 @@ export class NotificationsFeed {
 	loading = $state(false);
 	loaded = $state(false);
 	error = $state<string | null>(null);
+	/** The list was restored from the offline cache; the last refresh failed. */
+	stale = $state(false);
 
 	/** Everything created at or before this instant counts as read. */
 	#readUpTo = $state<string | null>(null);
@@ -76,6 +81,26 @@ export class NotificationsFeed {
 		const persisted = loadReadState();
 		this.#readUpTo = persisted.readUpTo;
 		this.#readIds = persisted.readIds;
+	}
+
+	/** Per-instance and per-account key, so cached notifications never leak. */
+	private cacheKey(): string | null {
+		if (!instance.url || !session.account) return null;
+		return offlineKey('notifications', `${instance.url}|${session.account.id}`);
+	}
+
+	private hydrate(): void {
+		if (this.items.length || this.loaded) return;
+		const key = this.cacheKey();
+		if (!key) return;
+		const cached = readCachedList<Notification>(key);
+		if (!cached) return;
+		this.items = dedupe(cached.items);
+	}
+
+	private save(): void {
+		const key = this.cacheKey();
+		if (key) writeCachedList(key, this.items, PAGE_SIZE);
 	}
 
 	/**
@@ -99,6 +124,7 @@ export class NotificationsFeed {
 
 	async load(force = false): Promise<void> {
 		if (this.loading || (this.loaded && !force)) return;
+		this.hydrate();
 		this.loading = true;
 		this.error = null;
 		try {
@@ -108,8 +134,15 @@ export class NotificationsFeed {
 			this.items = dedupe([...this.pending, ...fresh]);
 			this.pending = [];
 			this.loaded = true;
+			this.stale = false;
+			this.save();
 		} catch (err) {
-			this.error = err instanceof Error ? err.message : t('notifications.loadFailed');
+			if (this.items.length) {
+				this.loaded = true;
+				this.stale = true;
+			} else {
+				this.error = err instanceof Error ? err.message : t('notifications.loadFailed');
+			}
 		} finally {
 			this.loading = false;
 		}
@@ -124,6 +157,7 @@ export class NotificationsFeed {
 		try {
 			const older = await this.loader({ limit: PAGE_SIZE, maxId: oldest });
 			this.items = dedupe([...this.items, ...older]);
+			this.save();
 		} catch (err) {
 			this.error = err instanceof Error ? err.message : t('notifications.loadMoreFailed');
 		} finally {
@@ -143,6 +177,7 @@ export class NotificationsFeed {
 		if (!this.pending.length) return;
 		this.items = dedupe([...this.pending, ...this.items]);
 		this.pending = [];
+		this.save();
 	}
 
 	/** Swap in a freshly loaded copy of the status embedded in any notification. */
@@ -163,9 +198,11 @@ export class NotificationsFeed {
 		try {
 			const sinceId = this.items[0]?.id;
 			const fresh = await this.loader({ limit: PAGE_SIZE, sinceId });
+			this.stale = false;
 			if (fresh.length) {
 				this.items = dedupe([...fresh, ...this.pending, ...this.items]);
 				this.pending = [];
+				this.save();
 			}
 		} catch {
 			// handled on the next resume / reconnect
@@ -213,6 +250,7 @@ export class NotificationsFeed {
 		const keep = (item: Notification) => item.status?.id !== id;
 		this.items = this.items.filter(keep);
 		this.pending = this.pending.filter(keep);
+		this.save();
 	}
 
 	reset(): void {
@@ -220,6 +258,7 @@ export class NotificationsFeed {
 		this.pending = [];
 		this.loaded = false;
 		this.error = null;
+		this.stale = false;
 		this.#readUpTo = null;
 		this.#readIds = [];
 		try {

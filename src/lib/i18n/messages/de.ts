@@ -246,6 +246,8 @@ export const de = {
 	'account.empty.posts': 'Noch keine Beiträge.',
 
 	// Timelines
+	'offline.banner': 'Offline — du siehst zuletzt geladene Inhalte.',
+	'offline.stale': 'Zuletzt geladene Inhalte — Aktualisierung fehlgeschlagen.',
 	'timeline.empty': 'Hier ist noch nichts.',
 	'timeline.emptyHint':
 		'Folge ein paar Leuten — GoToSocial zeigt dir nur neue Beiträge, keine alten.',

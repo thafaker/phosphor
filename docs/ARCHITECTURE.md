@@ -139,9 +139,10 @@ sind vorhanden.
 
 Phosphor nutzt das direkt — ohne eigenen Relay:
 
-1. `static/sw.js` wird als Service Worker registriert. Er **cached nichts** (kein Offline),
-   sondern behandelt nur `push` (iOS/Safari: `registration.showNotification(...)`) und
-   `notificationclick` (App fokussieren bzw. öffnen).
+1. `static/sw.js` wird als Service Worker registriert und behandelt `push`
+   (iOS/Safari: `registration.showNotification(...)`) sowie `notificationclick`
+   (App fokussieren bzw. öffnen). Derselbe Worker cached außerdem die App-Shell für den
+   Offline-Start (siehe „Offline-Cache“) — die Push-Funktion hängt nicht davon ab.
 2. `src/lib/push/push.svelte.ts` holt den VAPID-Public-Key, ruft
    `pushManager.subscribe({ userVisibleOnly: true, applicationServerKey })` auf und spiegelt
    das Abo per `POST /api/v1/push/subscription` an die Instanz (Alerts + `policy: all`).
@@ -202,6 +203,8 @@ src/
       instance.ts             # URL-Normalisierung (Instanz-Eingabe)
       status.ts               # kanonische Beitrags-URL (url → uri)
       clipboard.ts            # Link kopieren inkl. Fallback für HTTP
+      offline.ts              # letzte Listen im localStorage (pro Konto/Instanz)
+      serviceWorker.ts        # Service Worker registrieren (nur Production)
     api/
       types.ts                # Mastodon/GtS-Typen (Ausschnitt)
       client.ts               # fetch-Wrapper, Bearer-Token, 429/503-Retry
@@ -220,6 +223,7 @@ src/
       streamer.svelte.ts      # zentrale Stream-Verteilung
       feed.svelte.ts          # TimelineFeed-Klasse; homeFeed & localFeed
       notifications.svelte.ts # Meldungen + Filter + lokaler Gelesen-Status
+      network.svelte.ts       # reaktiver Online-/Offline-Status
       followRequests.svelte.ts # offene Folgenanfragen (Liste + Annahme/Ablehnung)
       refresh.svelte.ts       # Refresh-Bus für „Neu laden“-Geste
       emojis.svelte.ts        # Custom-Emojis der Instanz (lazy, gecacht)
@@ -235,6 +239,7 @@ src/
       CopyLinkButton.svelte   # Link kopieren mit „Kopiert“-Rückmeldung
       StatusEditor.svelte     # modaler Dialog zum Bearbeiten eigener Beiträge
       ConfirmDialog.svelte    # modaler Bestätigungsdialog (z. B. Löschen, Blockieren)
+      OfflineNotice.svelte    # Hinweis auf zwischengespeicherte, nicht frische Listen
       StatusCard.svelte       # Boost-Wrapper um StatusBody
       Composer.svelte         # Verfassen/Antworten inkl. Anhänge
       ReplyBox.svelte         # aufgeklappte Antwort direkt unter einem Beitrag
@@ -673,6 +678,44 @@ werden.
 (System/Reduziert) und eine Schriftgrößensteuerung (A−/A+, Schieberegler, Zurücksetzen) mit
 Live-Vorschau. `'system'` lauscht auf `prefers-color-scheme` und folgt Änderungen zur Laufzeit.
 
+## Offline-Cache
+
+Phosphor ist weiterhin eine Online-SPA: Schreiben, Suche, Streaming und alles, was frische
+Serverdaten braucht, funktioniert offline nicht. Der Offline-Modus deckt bewusst nur den
+Einstieg ab — die App soll starten und die zuletzt gesehenen Beiträge und Meldungen zeigen,
+statt mit einer Browser-Fehlerseite zu enden.
+
+**Service Worker.** `static/sw.js` wird in `+layout.svelte` auf jedem Start registriert
+(nicht erst, wenn Push aktiviert wird) — aber nur in Production, damit `vite dev` keine
+Dev-Module cacht. Nach jedem Build schreibt `scripts/sw-manifest.mjs` eine Liste aller
+emittierten Dateien nach `/sw-manifest.json` und stempelt einen Inhalts-Hash in `sw.js`.
+Der Worker legt damit einen versionierten Cache `phosphor-shell-<hash>` an und löscht beim
+Aktivieren den vorherigen.
+
+**Was gecacht wird.** Ausschließlich same-origin App-Dateien: `index.html`/`/`, die
+gehashten `_app/`-Bundles, Icons und das Manifest. Navigationen laufen network-first und
+fallen offline auf die SPA-Hülle zurück; gehashte Bundles sind cache-first
+(`ignoreVary`, weil statische Hosts `Vary: Origin` setzen). API-Aufrufe gehen an die
+GoToSocial-Instanz und werden vom Worker nie angefasst — kein Token, keine fremden
+Antworten im Cache.
+
+**Zuletzt gesehene Listen.** `TimelineFeed` und `NotificationsFeed` legen ihre erste Seite
+(max. 20 Einträge) in `localStorage` ab (`utils/offline.ts`). Der Schlüssel enthält Instanz
+und Account-ID, damit ein Kontowechsel keine fremden Beiträge zeigt; `session.clear()`
+löscht alle Einträge beim Logout. Beim Start wird der Cache sofort angezeigt und parallel
+aktualisiert. Schlägt das Laden fehl, bleibt die Liste stehen (`stale`) und die Oberfläche
+zeigt einen dezenten Hinweis mit „Erneut versuchen“ statt eines roten Fehlers.
+
+**Session über den Offline-Start.** `session.init()` speichert das zuletzt verifizierte
+Profil und die Instanz-Limits mit. Ist beim Start kein Netz da, wird dieser Stand
+wiederhergestellt; nur ein echter API-Fehler (z. B. 401) meldet ab. Ein globaler Hinweis
+(`network.svelte.ts`, `navigator.onLine`) erscheint, solange der Browser offline ist, und
+verschwindet beim `online`-Event — das löst zugleich den üblichen Hintergrund-Refresh aus.
+
+**Grenzen.** Der Cache ist ein Komfort-Feature, kein vollwertiger Offline-Modus: keine
+neuen Beiträge, keine Interaktionen, keine Entwürfe. Bei einem Deploy kann ein bereits
+geöffneter alter Tab noch alte Chunk-Namen anfragen; ein Reload behebt das.
+
 ## Bewusste Design-Entscheidungen
 
 - **Eigener API-Client statt `masto.js`.** Die genutzte API-Fläche ist klein; eigener Code
@@ -698,13 +741,13 @@ Live-Vorschau. `'system'` lauscht auf `prefers-color-scheme` und folgt Änderung
 ✅ Custom-Emojis in Beiträgen, Bio und Profilfeldern,
 ✅ Medien-Lightbox für Bilder, Video-Overlay und Audio-Player,
 ✅ Instanz-Auswahl beim Login (eine App für beliebige GtS-Instanzen),
+✅ Offline-Start mit App-Shell, zuletzt geladenen Beiträgen und Meldungen,
 ✅ Originalprofil/-beitrag öffnen und Link kopieren (Teilen/Embedden),
 ✅ Erwähnungen im Beitragstext als interne Profillinks,
 ✅ Deutsch/Englisch inkl. sprachabhängiger Datums- und Zahlenformate.
 
 ## Nächste Schritte
 
-1. **Offline-Cache** (der Service Worker existiert bereits für Push, cached aber bewusst nichts).
-2. **Barrierefreiheit** ausbauen und mit Screenreadern testen (Phanpys bekannte Schwäche).
-3. **Link-Preview-Cards**: GtS 0.22 liefert `card` nie (kein OpenGraph-Fetch); die Anzeige
+1. **Barrierefreiheit** ausbauen und mit Screenreadern testen (Phanpys bekannte Schwäche).
+2. **Link-Preview-Cards**: GtS 0.22 liefert `card` nie (kein OpenGraph-Fetch); die Anzeige
    in `StatusBody` ist fertig, bräuchte aber Server-/Proxy-Unterstützung.
