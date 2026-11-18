@@ -223,6 +223,7 @@ src/
       streamer.svelte.ts      # zentrale Stream-Verteilung
       feed.svelte.ts          # TimelineFeed-Klasse; homeFeed & localFeed
       notifications.svelte.ts # Meldungen + Filter + lokaler Gelesen-Status
+      conversations.svelte.ts # Direktnachrichten-Inbox (Conversations-API)
       network.svelte.ts       # reaktiver Online-/Offline-Status
       followRequests.svelte.ts # offene Folgenanfragen (Liste + Annahme/Ablehnung)
       refresh.svelte.ts       # Refresh-Bus für „Neu laden“-Geste
@@ -256,6 +257,7 @@ src/
     callback/+page.svelte
     local/+page.svelte        # lokale Timeline
     follow_requests/+page.svelte # offene Folgenanfragen annehmen/ablehnen
+    messages/+page.svelte     # Direktnachrichten: Inbox, neue Nachricht, Lesen/Entfernen
     notifications/+page.svelte
     settings/+page.svelte     # Sprache, Erscheinungsbild, Schriftgröße, Gesten & Push
     status/[id]/+page.svelte  # Thread (Vorfahren + Hauptstatus + Antworten)
@@ -678,12 +680,39 @@ werden.
 (System/Reduziert) und eine Schriftgrößensteuerung (A−/A+, Schieberegler, Zurücksetzen) mit
 Live-Vorschau. `'system'` lauscht auf `prefers-color-scheme` und folgt Änderungen zur Laufzeit.
 
+## Direktnachrichten
+
+Phosphor unterstützt Direktnachrichten über die Mastodon-kompatible Conversations-API von
+GoToSocial:
+
+- **Inbox** (`GET /api/v1/conversations`): `src/routes/messages/+page.svelte` zeigt die
+  Unterhaltungen als Übersicht nach Teilnehmernamen (`conversation.accounts`) mit Avatar,
+  Vorschau aus `last_status`, Zeit und Ungelesen-Status. Gelesen wird serverseitig markiert
+  (`POST /api/v1/conversations/:id/read`), Entfernen über `DELETE /api/v1/conversations/:id`.
+- **Store** (`src/lib/stores/conversations.svelte.ts`): lädt/paginiert und puffert Updates
+  (analog zu Meldungen), hält den Unread-Badge-Stand in der Seitenleiste aktuell und cached die
+  erste Seite offline pro Instanz+Account (`phosphor:offline:v1:conversations:...`).
+- **Öffnen & Antworten:** Ein Klick markiert die Unterhaltung gelesen und öffnet den letzten
+  Status im bestehenden Thread (`/status/[id]`) mit Kontext (`getStatus`/`getContext`).
+  Antworten laufen wie gewohnt über den Composer; bei `visibility: 'direct'` werden alle
+  Teilnehmer (Autor + Mentions, ohne den eigenen Account) vorbefüllt, damit die Nachricht an
+  alle Adressaten zugestellt wird.
+- **Neue Nachricht:** Auf `/messages` können Empfänger gesucht und ausgewählt werden; der
+  Composer sendet dann mit gesperrter Sichtbarkeit `direct` und vorbefüllten `@`-Erwähnungen.
+- **Live-Updates:** `+layout.svelte` übernimmt `conversation`-Stream-Events, lädt bei Login/
+  Resume/Refresh (`pullNew`, `refreshViews`) nach und aktualisiert die Inbox zusätzlich als
+  Fallback, wenn eine `mention`-Benachrichtigung mit direktem Status eingeht. Bearbeitete oder
+  gelöschte letzte Nachrichten werden über `statusSync.ts` gespiegelt.
+- **Grenzen:** Es gibt keinen API-Endpunkt für „alle Nachrichten einer Unterhaltung“; der
+  Verlauf ergibt sich aus `last_status` und dem Reply-Kontext. Gruppierung/Empfang hängen
+  davon ab, dass alle Teilnehmer im Text erwähnt werden.
+
 ## Offline-Cache
 
 Phosphor ist weiterhin eine Online-SPA: Schreiben, Suche, Streaming und alles, was frische
 Serverdaten braucht, funktioniert offline nicht. Der Offline-Modus deckt bewusst nur den
-Einstieg ab — die App soll starten und die zuletzt gesehenen Beiträge und Meldungen zeigen,
-statt mit einer Browser-Fehlerseite zu enden.
+Einstieg ab — die App soll starten und die zuletzt gesehenen Beiträge, Meldungen und
+Direktnachrichten zeigen, statt mit einer Browser-Fehlerseite zu enden.
 
 **Service Worker.** `static/sw.js` wird in `+layout.svelte` auf jedem Start registriert
 (nicht erst, wenn Push aktiviert wird) — aber nur in Production, damit `vite dev` keine
@@ -699,12 +728,12 @@ fallen offline auf die SPA-Hülle zurück; gehashte Bundles sind cache-first
 GoToSocial-Instanz und werden vom Worker nie angefasst — kein Token, keine fremden
 Antworten im Cache.
 
-**Zuletzt gesehene Listen.** `TimelineFeed` und `NotificationsFeed` legen ihre erste Seite
-(max. 20 Einträge) in `localStorage` ab (`utils/offline.ts`). Der Schlüssel enthält Instanz
-und Account-ID, damit ein Kontowechsel keine fremden Beiträge zeigt; `session.clear()`
-löscht alle Einträge beim Logout. Beim Start wird der Cache sofort angezeigt und parallel
-aktualisiert. Schlägt das Laden fehl, bleibt die Liste stehen (`stale`) und die Oberfläche
-zeigt einen dezenten Hinweis mit „Erneut versuchen“ statt eines roten Fehlers.
+**Zuletzt gesehene Listen.** `TimelineFeed`, `NotificationsFeed` und `ConversationsFeed` legen
+ihre erste Seite (max. 20 Einträge) in `localStorage` ab (`utils/offline.ts`). Der Schlüssel
+enthält Instanz und Account-ID, damit ein Kontowechsel keine fremden Inhalte zeigt;
+`session.clear()` löscht alle Einträge beim Logout. Beim Start wird der Cache sofort angezeigt
+und parallel aktualisiert. Schlägt das Laden fehl, bleibt die Liste stehen (`stale`) und die
+Oberfläche zeigt einen dezenten Hinweis mit „Erneut versuchen“ statt eines roten Fehlers.
 
 **Session über den Offline-Start.** `session.init()` speichert das zuletzt verifizierte
 Profil und die Instanz-Limits mit. Ist beim Start kein Netz da, wird dieser Stand
@@ -741,7 +770,8 @@ geöffneter alter Tab noch alte Chunk-Namen anfragen; ein Reload behebt das.
 ✅ Custom-Emojis in Beiträgen, Bio und Profilfeldern,
 ✅ Medien-Lightbox für Bilder, Video-Overlay und Audio-Player,
 ✅ Instanz-Auswahl beim Login (eine App für beliebige GtS-Instanzen),
-✅ Offline-Start mit App-Shell, zuletzt geladenen Beiträgen und Meldungen,
+✅ Offline-Start mit App-Shell, zuletzt geladenen Beiträgen, Meldungen und Direktnachrichten,
+✅ Direktnachrichten (Inbox nach Namen, neue Nachricht, Antworten/Lesen/Entfernen),
 ✅ Originalprofil/-beitrag öffnen und Link kopieren (Teilen/Embedden),
 ✅ Erwähnungen im Beitragstext als interne Profillinks,
 ✅ Deutsch/Englisch inkl. sprachabhängiger Datums- und Zahlenformate.

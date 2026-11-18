@@ -7,9 +7,10 @@
 	import Icon from '#lib/components/Icon.svelte';
 	import PullToRefresh from '#lib/components/PullToRefresh.svelte';
 	import Sidebar from '#lib/components/Sidebar.svelte';
-	import type { Notification, Status } from '#lib/api/types.ts';
+	import type { Conversation, Notification, Status } from '#lib/api/types.ts';
 	import { session } from '#lib/auth/session.svelte.ts';
 	import { i18n, t } from '#lib/i18n/index.svelte.ts';
+	import { conversationsFeed } from '#lib/stores/conversations.svelte.ts';
 	import { homeFeed, localFeed } from '#lib/stores/feed.svelte.ts';
 	import { followRequests } from '#lib/stores/followRequests.svelte.ts';
 	import { notificationsFeed } from '#lib/stores/notifications.svelte.ts';
@@ -99,7 +100,12 @@
 		const beforeY = window.scrollY;
 		const beforeHeight = root.scrollHeight;
 
-		await Promise.all([homeFeed.loadNew(), localFeed.loadNew(), notificationsFeed.loadNew()]);
+		await Promise.all([
+			homeFeed.loadNew(),
+			localFeed.loadNew(),
+			notificationsFeed.loadNew(),
+			conversationsFeed.loadNew()
+		]);
 		await tick();
 
 		const grew = root.scrollHeight - beforeHeight;
@@ -130,6 +136,7 @@
 			streamer.connect(token);
 			void homeFeed.load();
 			void notificationsFeed.load();
+			void conversationsFeed.load();
 			void followRequests.load();
 			// Re-register an existing browser push subscription with the server,
 			// so a token that only later gained the `push` scope still ends up
@@ -140,6 +147,7 @@
 			homeFeed.reset();
 			localFeed.reset();
 			notificationsFeed.reset();
+			conversationsFeed.reset();
 			followRequests.reset();
 		}
 	});
@@ -166,8 +174,16 @@
 					// notification for a `follow` one once it is approved.
 					if (notification.type === 'follow_request') followRequests.add(notification.account);
 					else if (notification.type === 'follow') followRequests.resolve(notification.account.id);
+					// Direct messages arrive as mention notifications; refresh the
+					// inbox in case the server does not emit a `conversation` event.
+					if (notification.type === 'mention' && notification.status?.visibility === 'direct') {
+						void conversationsFeed.loadNew();
+					}
 					break;
 				}
+				case 'conversation':
+					conversationsFeed.upsert(event.payload as Conversation);
+					break;
 			}
 		});
 	});

@@ -1,11 +1,12 @@
 import type { Status } from '#lib/api/types.ts';
+import { conversationsFeed } from './conversations.svelte.ts';
 import { refreshEvent } from './refresh.svelte.ts';
 import { homeFeed, localFeed } from './feed.svelte.ts';
 import { notificationsFeed } from './notifications.svelte.ts';
 
 /**
- * Apply an edited status everywhere it may currently be shown: both timelines
- * and any notification that embeds it.
+ * Apply an edited status everywhere it may currently be shown: timelines,
+ * notifications, and the direct-message inbox preview.
  *
  * GoToSocial streams a `status.update` event after an edit, but doing this
  * eagerly keeps the UI correct without waiting for the round-trip (and covers
@@ -16,17 +17,18 @@ export function applyStatusUpdate(status: Status): void {
 	homeFeed.replace(status);
 	localFeed.replace(status);
 	notificationsFeed.replaceStatus(status);
+	conversationsFeed.replaceStatus(status);
 }
 
 /**
- * Drop a deleted status from every place it's kept: timelines and any
- * notification that embedded it. Also reached from the stream's `delete` event,
- * so a post removed on another device disappears here too.
+ * Drop a deleted status from every place it's kept: timelines, notifications,
+ * and direct-message previews. Also reached from the stream's `delete` event.
  */
 export function applyStatusRemoval(id: string): void {
 	homeFeed.remove(id);
 	localFeed.remove(id);
 	notificationsFeed.removeStatus(id);
+	conversationsFeed.removeStatus(id);
 }
 
 /**
@@ -38,6 +40,11 @@ export function applyStatusRemoval(id: string): void {
  * next attempt) picks the data up anyway.
  */
 export async function refreshViews(): Promise<void> {
-	await Promise.allSettled([homeFeed.loadNew(), localFeed.loadNew(), notificationsFeed.loadNew()]);
+	await Promise.allSettled([
+		homeFeed.loadNew(),
+		localFeed.loadNew(),
+		notificationsFeed.loadNew(),
+		conversationsFeed.loadNew()
+	]);
 	refreshEvent.request();
 }

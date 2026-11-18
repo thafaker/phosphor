@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { session } from '#lib/auth/session.svelte.ts';
+	import { conversationsFeed } from '#lib/stores/conversations.svelte.ts';
 	import { followRequests } from '#lib/stores/followRequests.svelte.ts';
 	import { t } from '#lib/i18n/index.svelte.ts';
 	import { notificationsFeed } from '#lib/stores/notifications.svelte.ts';
@@ -12,6 +13,7 @@
 		{ href: '/', label: t('nav.home'), icon: 'home' },
 		{ href: '/search', label: t('nav.search'), icon: 'search' },
 		{ href: '/notifications', label: t('nav.notifications'), icon: 'bell' },
+		{ href: '/messages', label: t('nav.messages'), icon: 'mail' },
 		// Only worth a slot while the profile is private (only then can requests
 		// exist at all) or while some are actually waiting.
 		...(followRequests.pending > 0 || session.account?.locked
@@ -28,9 +30,10 @@
 		return href === '/' ? page.url.pathname === '/' : page.url.pathname.startsWith(href);
 	}
 
-	/** Pending follow requests, shown as a badge on the "Anfragen" entry. */
+	/** Pending follow requests / unread conversations, shown as a badge. */
 	function badge(href: string): number {
 		if (href === '/follow_requests') return followRequests.pending;
+		if (href === '/messages') return conversationsFeed.unread;
 		return 0;
 	}
 

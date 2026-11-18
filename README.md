@@ -39,6 +39,8 @@ vorbelegen (siehe `.env.example`).
 - [x] In-App-Medienansicht: Bild-Lightbox, Video-Overlay und Audio-Player
 - [x] Suche (Personen, Hashtags, Beiträge) und Hashtag-Seiten
 - [x] Benachrichtigungen mit Filtern und lokalem Gelesen-Status
+- [x] Direktnachrichten: Posteingang mit Übersicht nach Namen, neue Nachricht,
+      Antworten im Thread sowie Lesen und Entfernen von Unterhaltungen
 - [x] Push-Benachrichtigungen per Web Push — ohne externen Relay, inkl. neuer Beiträge
       gefolgter Accounts (dort je Account über die „Glocke“ aktivierbar)
 - [x] Erscheinungsbild: Hell / Dunkel / System

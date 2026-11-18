@@ -86,6 +86,7 @@ Fake-Session an. Sie brauchen weder ein Konto noch Netzwerkzugriff. Abgedeckt si
 | `media-lightbox.mjs`    | Bild-Lightbox, Navigation, Fokus, Audio-Player, Custom-Emoji im Text      |
 | `image-compression.mjs` | Großes Foto wird vor dem Upload auf 1024 px/JPEG verkleinert              |
 | `language.mjs`          | Sprachwahl, Persistenz, `lang`-Attribut und sprachabhängige Zahlenformate |
+| `messages.mjs`          | Direktnachrichten-Inbox, Lesen/Entfernen und neue Direktnachricht         |
 | `offline.mjs`           | Offline-Start aus Service-Worker-Cache, tiefer Link, Rückkehr ins Netz    |
 
 ## 4. Was nur manuell geht

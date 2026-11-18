@@ -225,6 +225,16 @@ export interface StatusSource {
 	content_type?: StatusContentType;
 }
 
+/** A direct-message conversation (Mastodon-compatible `GET /api/v1/conversations`). */
+export interface Conversation {
+	id: string;
+	/** The other participants in the conversation. */
+	accounts: Account[];
+	unread: boolean;
+	/** The most recent message in the conversation, usually a direct status. */
+	last_status: Status | null;
+}
+
 export interface InstanceConfiguration {
 	statuses?: { max_characters?: number; max_media_attachments?: number };
 	/** Media upload limits, exposed via the v2 instance endpoint. */

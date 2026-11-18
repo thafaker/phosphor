@@ -24,9 +24,23 @@
 		placeholder?: string;
 		autofocus?: boolean;
 		onPosted?: (status: Status) => void;
+		/** Prefilled text (e.g. recipient mentions for a new direct message). */
+		initialText?: string;
+		/** Initial visibility when not replying to a status. */
+		initialVisibility?: Visibility;
+		/** Lock the visibility selector (used for direct-message composers). */
+		lockVisibility?: boolean;
 	}
 
-	let { inReplyTo = null, placeholder, autofocus = false, onPosted }: Props = $props();
+	let {
+		inReplyTo = null,
+		placeholder,
+		autofocus = false,
+		onPosted,
+		initialText = '',
+		initialVisibility,
+		lockVisibility = false
+	}: Props = $props();
 
 	const placeholderText = $derived(placeholder ?? t('composer.placeholder'));
 
@@ -45,8 +59,14 @@
 	);
 	// Default to the visibility of the status we're replying to (initial value only).
 	// svelte-ignore state_referenced_locally
-	let visibility = $state<Visibility>(inReplyTo?.visibility ?? 'public');
+	let visibility = $state<Visibility>(
+		inReplyTo?.visibility ?? initialVisibility ?? (lockVisibility ? 'direct' : 'public')
+	);
 	let sensitive = $state(false);
+
+	// Seed initial text for non-reply composers (e.g. new direct messages).
+	// svelte-ignore state_referenced_locally
+	if (initialText && !inReplyTo) text = initialText;
 	let drafts = $state<MediaDraft[]>([]);
 	let submitting = $state(false);
 	let error = $state<string | null>(null);
@@ -83,31 +103,53 @@
 			: ''
 	);
 
-	const replyHandle = $derived(inReplyTo ? replyMention(inReplyTo.account, session.account) : null);
+	/**
+	 * Mention handles to seed into a reply. Direct messages must address every
+	 * participant (author + mentioned accounts) so the server delivers them to
+	 * all recipients; regular replies only mention the replied-to author.
+	 */
+	const replyPrefix = $derived.by(() => {
+		if (!inReplyTo) return '';
+		if (inReplyTo.visibility === 'direct') {
+			const seen: string[] = [];
+			const handles: string[] = [];
+			const add = (acct: string | undefined, id?: string) => {
+				if (!acct) return;
+				if (session.account && (id === session.account.id || acct === session.account.acct)) return;
+				if (seen.includes(acct)) return;
+				seen.push(acct);
+				handles.push(`@${acct}`);
+			};
+			add(inReplyTo.account.acct, inReplyTo.account.id);
+			for (const mention of inReplyTo.mentions) add(mention.acct, mention.id);
+			return handles.join(' ');
+		}
+		const handle = replyMention(inReplyTo.account, session.account);
+		return handle ?? '';
+	});
 
-	/** Reply target whose mention currently sits in the text, and which handle that was. */
-	let seeded = { id: '', handle: '' };
+	/** Reply target whose mention prefix currently sits in the text. */
+	let seeded = { id: '', prefix: '' };
 
-	// Mastodon-style: the mention of the replied-to account is part of the text,
-	// so it is visible, counted against the limit and editable like anything else.
-	// GoToSocial notifies and addresses the other instance only from that text.
+	// Mastodon-style: the mention(s) of the replied-to participants are part of
+	// the text, so they are visible, counted against the limit and editable.
 	$effect(() => {
 		const id = inReplyTo?.id ?? '';
 		if (id === seeded.id) return;
 
-		const previous = seeded.handle;
-		seeded = { id, handle: '' };
-		if (!replyHandle) return;
+		const previous = seeded.prefix;
+		seeded = { id, prefix: '' };
+		if (!replyPrefix) return;
 
 		if (text.trim() === '') {
-			text = `${replyHandle} `;
+			text = `${replyPrefix} `;
 		} else if (previous && text.startsWith(`${previous} `)) {
 			// A draft survives a change of target: keep the wording, re-address it.
-			text = `${replyHandle} ${text.slice(previous.length + 1)}`;
+			text = `${replyPrefix} ${text.slice(previous.length + 1)}`;
 		} else {
 			return;
 		}
-		seeded = { id, handle: replyHandle };
+		seeded = { id, prefix: replyPrefix };
 	});
 
 	function addFiles(files: FileList): void {
@@ -217,8 +259,9 @@
 
 	function reset(): void {
 		// The composer stays in reply mode after posting, so a follow-up answer
-		// needs its mention just as much as the first one.
-		text = replyHandle ? `${replyHandle} ` : '';
+		// needs its mention(s) just as much as the first one. For a new-message
+		// composer, restore the initial recipients instead.
+		text = replyPrefix ? `${replyPrefix} ` : initialText && !inReplyTo ? initialText : '';
 		spoilerText = '';
 		cwEnabled = false;
 		sensitive = false;
@@ -391,18 +434,28 @@
 					</button>
 				{/if}
 
-				<label class="flex items-center gap-1 text-xs text-ink-soft">
-					<Icon name="globe" size={15} />
-					<select
-						bind:value={visibility}
-						class="cursor-pointer rounded-md bg-transparent py-1 pr-1 text-xs text-ink outline-none hover:bg-accent/10"
+				{#if lockVisibility}
+					<span
+						class="flex items-center gap-1 text-xs text-ink-soft"
+						title={t('common.visibility.direct')}
 					>
-						<option value="public">{t('common.visibility.public')}</option>
-						<option value="unlisted">{t('common.visibility.unlisted')}</option>
-						<option value="private">{t('common.visibility.private')}</option>
-						<option value="direct">{t('common.visibility.direct')}</option>
-					</select>
-				</label>
+						<Icon name="lock" size={15} />
+						{t('common.visibility.direct')}
+					</span>
+				{:else}
+					<label class="flex items-center gap-1 text-xs text-ink-soft">
+						<Icon name="globe" size={15} />
+						<select
+							bind:value={visibility}
+							class="cursor-pointer rounded-md bg-transparent py-1 pr-1 text-xs text-ink outline-none hover:bg-accent/10"
+						>
+							<option value="public">{t('common.visibility.public')}</option>
+							<option value="unlisted">{t('common.visibility.unlisted')}</option>
+							<option value="private">{t('common.visibility.private')}</option>
+							<option value="direct">{t('common.visibility.direct')}</option>
+						</select>
+					</label>
+				{/if}
 
 				<span
 					class="ml-auto text-xs tabular-nums {remaining < 0

@@ -8,6 +8,7 @@ import { apiRequest } from './client';
 import type {
 	Account,
 	Context,
+	Conversation,
 	CustomEmoji,
 	InstanceLimits,
 	InstanceV1,
@@ -300,6 +301,26 @@ export function getNotifications(params: TimelineParams = {}): Promise<Notificat
 
 export function clearNotifications(): Promise<void> {
 	return apiRequest<void>('/api/v1/notifications/clear', { method: 'POST' });
+}
+
+export function getConversations(params: TimelineParams = {}): Promise<Conversation[]> {
+	return apiRequest<Conversation[]>('/api/v1/conversations', {
+		query: {
+			limit: params.limit ?? 20,
+			max_id: params.maxId,
+			since_id: params.sinceId
+		}
+	});
+}
+
+/** Mark a conversation as read (`POST /api/v1/conversations/:id/read`). */
+export function markConversationRead(id: string): Promise<Conversation> {
+	return apiRequest<Conversation>(`/api/v1/conversations/${id}/read`, { method: 'POST' });
+}
+
+/** Remove a conversation from the list (`DELETE /api/v1/conversations/:id`). */
+export function deleteConversation(id: string): Promise<unknown> {
+	return apiRequest<unknown>(`/api/v1/conversations/${id}`, { method: 'DELETE' });
 }
 
 /**
