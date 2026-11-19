@@ -48,8 +48,11 @@
 	class="fixed inset-x-0 bottom-0 z-30 flex items-center justify-around border-t border-line bg-canvas/95 px-2 py-1.5 backdrop-blur md:sticky md:top-0 md:h-dvh md:w-60 md:flex-col md:items-stretch md:justify-start md:gap-1 md:border-t-0 md:border-r md:bg-transparent md:px-4 md:py-6"
 >
 	<a href="/" class="hidden items-center gap-2 px-2 py-3 md:flex" aria-label="Phosphor">
-		<Icon name="sparkles" size={22} class="text-accent" />
-		<span class="text-lg font-bold tracking-tight text-accent">phosphor</span>
+		<Icon name="sparkles" size={22} class="shrink-0 text-accent" />
+		<span class="flex flex-col leading-none">
+			<span class="text-lg font-bold tracking-tight text-accent">phosphor</span>
+			<span class="mt-0.5 text-[10px] font-normal tracking-wide text-ink-faint">By Jan Montag</span>
+		</span>
 	</a>
 
 	{#each items as item (item.href)}

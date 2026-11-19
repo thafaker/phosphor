@@ -10,6 +10,9 @@ export const DEFAULT_INSTANCE_URL = (import.meta.env.VITE_INSTANCE_URL ?? '').tr
 
 export const APP_NAME = 'Phosphor';
 export const APP_WEBSITE = 'https://github.com/thafaker/phosphor';
+export const APP_REPO = 'thafaker/phosphor';
+/** Shown in the UI and compared against the latest GitHub release/tag. */
+export const APP_VERSION = '0.0.1';
 
 /** OAuth scopes requested at login. */
 export const SCOPES = 'read write follow push';

@@ -20,6 +20,7 @@
 	import { pushStore } from '#lib/push/push.svelte.ts';
 	import { streamer } from '#lib/stores/streamer.svelte.ts';
 	import { registerServiceWorker } from '#lib/utils/serviceWorker.ts';
+	import VersionBadge from '#lib/components/VersionBadge.svelte';
 
 	let { children }: LayoutProps = $props();
 
@@ -235,3 +236,5 @@
 		<Icon name="refresh" size={24} class="animate-spin" />
 	</div>
 {/if}
+
+<VersionBadge />
